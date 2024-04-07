@@ -1,4 +1,4 @@
-#include "server.h"
+#include <modemstuff/netstuff/netserver.h>
 
 #include <stdio.h>
 #include <netdb.h>
@@ -17,12 +17,12 @@
 
 void *server_thread_function(void *data);
 
-int server_init(server_t *server, int port)
+int ns_server_init(ns_server_t *server, int port)
 {
     struct sockaddr_in server_address;
 
     // Clear and initialize the server structure
-    memset(server, 0, sizeof(server_t));
+    memset(server, 0, sizeof(ns_server_t));
     server->client_sockets_mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 
     // Clear and initialize the server address structure
@@ -58,7 +58,7 @@ int server_init(server_t *server, int port)
     return 0;
 }
 
-void server_set_callbacks(server_t *server,
+void ns_server_set_callbacks(ns_server_t *server,
                           void (*client_data_start_callback)(void),
                           void (*client_data_chunk_callback)(void *, size_t),
                           void (*client_data_end_callback)(void))
@@ -68,7 +68,7 @@ void server_set_callbacks(server_t *server,
     server->client_data_end_callback = client_data_end_callback;
 }
 
-void server_start(server_t *server)
+void ns_server_start(ns_server_t *server)
 {
     server->run = 1;
 
@@ -79,12 +79,12 @@ void server_start(server_t *server)
     }
 }
 
-void server_wait(server_t *server)
+void ns_server_wait(ns_server_t *server)
 {
     pthread_join(server->server_thread, NULL);
 }
 
-void server_broadcast(server_t *server, const void *data, size_t size)
+void ns_server_broadcast(ns_server_t *server, const void *data, size_t size)
 {
     int i, sent;
 
@@ -115,7 +115,7 @@ void server_broadcast(server_t *server, const void *data, size_t size)
         }
 }
 
-void server_destroy(server_t *server)
+void ns_server_destroy(ns_server_t *server)
 {
     int i;
 
@@ -140,9 +140,9 @@ void *server_thread_function(void *data)
     char client_data_buf[CLIENT_DATA_BUF_SIZE];
     int client_data_chunk_len;
     int client_data_total_len;
-    server_t *server;
+    ns_server_t *server;
 
-    server = (server_t *)data;
+    server = (ns_server_t *)data;
 
     while (server->run)
     {

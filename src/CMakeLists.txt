@@ -1,1 +1,2 @@
-add_subdirectory(soundcard)
+add_subdirectory(netstuff)
+add_subdirectory(datastuff)

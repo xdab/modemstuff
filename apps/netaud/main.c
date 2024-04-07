@@ -2,9 +2,10 @@
 #include <stdlib.h>
 #include <pthread.h>
 
+#include <modemstuff/netstuff/netserver.h>
+#include <modemstuff/datastuff/linkedbuffer.h>
+
 #include "audio.h"
-#include "server.h"
-#include "buffer.h"
 #include "utils.h"
 
 #define ARGS_USED (3)
@@ -15,7 +16,7 @@
 
 double start_time = -1.0;
 pthread_mutex_t client_data_mutex = PTHREAD_MUTEX_INITIALIZER;
-buffer_t client_data_buffer;
+ds_linked_buffer_t client_data_buffer;
 
 int main(char argc, const char *argv[]);
 audio_device_t *parse_args(int argc, const char *argv[], audio_device_t audio_devices[MAX_AUDIO_DEVICES], int num_audio_devices);
@@ -29,7 +30,7 @@ int main(char argc, const char *argv[])
     audio_device_t audio_devices[MAX_AUDIO_DEVICES];
     int num_audio_devices;
     audio_device_t *selected_device;
-    server_t server;
+    ns_server_t server;
 
     num_audio_devices = audio_init(audio_devices);
 
@@ -51,9 +52,9 @@ int main(char argc, const char *argv[])
         return EXIT_FAILURE;
     }
 
-    buffer_init(&client_data_buffer);
+    ds_linked_buffer_init(&client_data_buffer);
 
-    if (server_init(&server, selected_device->port))
+    if (ns_server_init(&server, selected_device->port))
     {
         fprintf(stderr, "Error: server_init() failed\n");
         return EXIT_FAILURE;
@@ -65,12 +66,12 @@ int main(char argc, const char *argv[])
         return EXIT_FAILURE;
     }
 
-    server_set_callbacks(&server, &client_data_start_callback, &client_data_chunk_callback, &client_data_end_callback);
-    server_start(&server);
+    ns_server_set_callbacks(&server, &client_data_start_callback, &client_data_chunk_callback, &client_data_end_callback);
+    ns_server_start(&server);
 
     fprintf(stderr, "Server started\n");
 
-    server_wait(&server);
+    ns_server_wait(&server);
 
     if (audio_close(selected_device))
     {
@@ -146,21 +147,21 @@ audio_device_t *parse_args(int argc, const char *argv[], audio_device_t audio_de
 
 int stream_callback(const void *input_buffer, void *output_buffer, unsigned long frames_per_buffer, const PaStreamCallbackTimeInfo *time_info, PaStreamCallbackFlags status_flags, void *user_data)
 {
-    server_t *server;
+    ns_server_t *server;
     int frames_read;
 
-    server = (server_t *)user_data;
+    server = (ns_server_t *)user_data;
 
     // Normalize time so that 0.0 approximately corresponds to program start
     if (start_time < 0.0)
         start_time = time_info->currentTime;
 
     // Send microphone input to clients
-    server_broadcast(server, input_buffer, frames_per_buffer * sizeof(float));
+    ns_server_broadcast(server, input_buffer, frames_per_buffer * sizeof(float));
 
     // Send data received from clients to speaker output
     pthread_mutex_lock(&client_data_mutex);
-    frames_read = buffer_pop(&client_data_buffer, output_buffer, frames_per_buffer * sizeof(float)) / sizeof(float);
+    frames_read = ds_linked_buffer_pop(&client_data_buffer, output_buffer, frames_per_buffer * sizeof(float)) / sizeof(float);
     pthread_mutex_unlock(&client_data_mutex);
 
     // Fill remainder of buffer (if any) with silence
@@ -177,7 +178,7 @@ void client_data_start_callback()
 
 void client_data_chunk_callback(void *data, size_t size)
 {
-    buffer_push(&client_data_buffer, data, size);
+    ds_linked_buffer_push(&client_data_buffer, data, size);
 }
 
 void client_data_end_callback()

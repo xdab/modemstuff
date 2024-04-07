@@ -1,15 +1,15 @@
-#include "buffer.h"
+#include <modemstuff/datastuff/linkedbuffer.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-void buffer_init(buffer_t *buffer)
+void ds_linked_buffer_init(ds_linked_buffer_t *buffer)
 {
-    buffer_node_t *node;
+    ds_linked_buffer_node_t *node;
 
     // Create a buffer with a single, empty node
-    node = (buffer_node_t *)malloc(sizeof(buffer_node_t));
+    node = (ds_linked_buffer_node_t *)malloc(sizeof(ds_linked_buffer_node_t));
     if (node == NULL)
     {
         fprintf(stderr, "Error: malloc() failed\n");
@@ -22,10 +22,10 @@ void buffer_init(buffer_t *buffer)
     buffer->nodes = 1;
 }
 
-size_t buffer_size(buffer_t *buffer)
+uint32_t ds_linked_buffer_size(ds_linked_buffer_t *buffer)
 {
-    size_t size = 0;
-    buffer_node_t *node = buffer->head;
+    uint32_t size = 0;
+    ds_linked_buffer_node_t *node = buffer->head;
 
     while (node != NULL)
     {
@@ -36,12 +36,13 @@ size_t buffer_size(buffer_t *buffer)
     return size;
 }
 
-void buffer_push(buffer_t *buffer, void *data, size_t size)
+void ds_linked_buffer_push(ds_linked_buffer_t *buffer, void *data, uint32_t size)
 {
-    size_t remaining_node_capacity;
-    size_t remaining_data_size;
-    size_t size_to_store;
+    uint32_t remaining_node_capacity;
+    uint32_t remaining_data_size;
+    uint32_t size_to_store;
     uint8_t *data_ptr;
+    ds_linked_buffer_node_t *node;
 
     // Check for invalid arguments
     if (buffer == NULL)
@@ -56,13 +57,13 @@ void buffer_push(buffer_t *buffer, void *data, size_t size)
     data_ptr = (uint8_t *)data;
 
     // Find the last node
-    buffer_node_t *node = buffer->tail;
+    node = buffer->tail;
 
     // If the last node is not full, copy data to it until it is
-    if ((node->offset + node->size) < BUFFER_NODE_MAX_DATA_SIZE)
+    if ((node->offset + node->size) < DS_LINKED_BUFFER_NODE_CAPACITY)
     {
         // Calculate how much data can be copied to the node
-        remaining_node_capacity = BUFFER_NODE_MAX_DATA_SIZE - (node->offset + node->size);
+        remaining_node_capacity = DS_LINKED_BUFFER_NODE_CAPACITY - (node->offset + node->size);
         size_to_store = (remaining_data_size < remaining_node_capacity) ? remaining_data_size : remaining_node_capacity;
 
         memcpy(&node->data[node->offset + node->size], data_ptr, size_to_store);
@@ -74,7 +75,7 @@ void buffer_push(buffer_t *buffer, void *data, size_t size)
     // Create new nodes and copy data into them
     while (remaining_data_size > 0)
     {
-        node->next = (buffer_node_t *)malloc(sizeof(buffer_node_t));
+        node->next = (ds_linked_buffer_node_t *)malloc(sizeof(ds_linked_buffer_node_t));
         if (node->next == NULL)
         {
             fprintf(stderr, "Error: malloc() failed\n");
@@ -88,7 +89,7 @@ void buffer_push(buffer_t *buffer, void *data, size_t size)
         buffer->tail = node;
         buffer->nodes++;
 
-        remaining_node_capacity = BUFFER_NODE_MAX_DATA_SIZE;
+        remaining_node_capacity = DS_LINKED_BUFFER_NODE_CAPACITY;
         size_to_store = (remaining_data_size < remaining_node_capacity) ? remaining_data_size : remaining_node_capacity;
 
         memcpy(node->data, data_ptr, size_to_store);
@@ -98,14 +99,14 @@ void buffer_push(buffer_t *buffer, void *data, size_t size)
     }
 }
 
-int buffer_pop(buffer_t *buffer, void *data, size_t size)
+int ds_linked_buffer_pop(ds_linked_buffer_t *buffer, void *data, uint32_t size)
 {
     uint8_t *data_ptr;
-    size_t remaining_data_size;
-    size_t size_to_copy;
-    size_t output_size;
-    buffer_node_t *node;
-    buffer_node_t *next_node;
+    uint32_t remaining_data_size;
+    uint32_t size_to_copy;
+    uint32_t output_size;
+    ds_linked_buffer_node_t *node;
+    ds_linked_buffer_node_t *next_node;
 
     // Check for invalid arguments
     if (buffer == NULL)
@@ -161,7 +162,7 @@ int buffer_pop(buffer_t *buffer, void *data, size_t size)
     // At the end, if the buffer contains no nodes, reinitialize it
     // to contain a single empty node
     if (buffer->nodes == 0)
-        buffer_init(buffer);
+        ds_linked_buffer_init(buffer);
 
     // Return the actual number of bytes copied
     return output_size;
