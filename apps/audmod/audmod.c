@@ -1,20 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <configstuff/config.h>
 #include <netstuff/netclient.h>
 #include <modemstuff/fsk.h>
 #include <modemstuff/bitdet.h>
 #include <modemstuff/linecode.h>
 #include <modemstuff/ax25_deframer.h>
 
-#define ARGS_USED (6)
+#define ARGS_USED (1)
 #define ARGS_EXPECTED (1 + ARGS_USED)
-#define ARG_HOST 1
-#define ARG_PORT 2
-#define ARG_SAMPLE_RATE 3
-#define ARG_MARK_FREQ 4
-#define ARG_SPACE_FREQ 5
-#define ARG_BAUD_RATE 6
+#define ARG_CONFIG 1
 
 ms_fsk_detector_t fsk_detector;
 ms_bit_detector_t bit_detector;
@@ -25,30 +21,35 @@ void data_callback(void *data, uint32_t length);
 
 int main(int argc, const char *argv[])
 {
+    cs_config_t config;
     ns_client_t client;
     int sample_rate, port;
     ms_float mark_freq, space_freq, baud_rate;
-    const char *host;
+    const char *host, *value;
 
     if (argc != ARGS_EXPECTED)
     {
-        fprintf(stderr, "\nUsage: %s (HOST) (PORT) (SAMPLE_RATE) (MARK_FREQ) (SPACE_FREQ) (BAUD_RATE)\n", argv[0]);
-        fprintf(stderr, "\tHOST: Host to connect to\n");
-        fprintf(stderr, "\tPORT: Port to connect to\n");
-        fprintf(stderr, "\tSAMPLE_RATE: Sample rate to use\n");
+        fprintf(stderr, "\nUsage: %s (CONFIG)\n", argv[0]);
+        fprintf(stderr, "\tCONFIG: configuration file\n");
 
         fprintf(stderr, "\nExample:\n");
-        fprintf(stderr, "\t%s 192.168.50.1 8800 44100 1200 2200 1200\n", argv[0]);
+        fprintf(stderr, "\t%s packet1200.conf\n", argv[0]);
 
         return EXIT_FAILURE;
     }
 
-    host = argv[ARG_HOST];
-    port = atoi(argv[ARG_PORT]);
-    sample_rate = atoi(argv[ARG_SAMPLE_RATE]);
-    mark_freq = atof(argv[ARG_MARK_FREQ]);
-    space_freq = atof(argv[ARG_SPACE_FREQ]);
-    baud_rate = atof(argv[ARG_BAUD_RATE]);
+    if (cs_config_read(&config, argv[ARG_CONFIG]))
+    {
+        fprintf(stderr, "Error: cs_config_read() failed\n");
+        return EXIT_FAILURE;
+    }
+
+    host = cs_config_get_or_exit(&config, "HOST");
+    port = atoi(cs_config_get_or_exit(&config, "PORT"));
+    sample_rate = atoi(cs_config_get_or_exit(&config, "RATE"));
+    mark_freq = atof(cs_config_get_or_exit(&config, "MARK"));
+    space_freq = atof(cs_config_get_or_exit(&config, "SPACE"));
+    baud_rate = atof(cs_config_get_or_exit(&config, "BAUD"));
 
     if (ms_fsk_detector_init(&fsk_detector, mark_freq, space_freq, baud_rate, sample_rate))
     {
@@ -103,7 +104,7 @@ void data_callback(void *data, uint32_t length)
         {
             ms_ax25_frame_pack_tnc2(&frame, packet_str);
             fputs(packet_str, stderr);
-            fputs("\r\n\n", stderr);
+            fputs("\r\n", stderr);
         }
     }
 }
