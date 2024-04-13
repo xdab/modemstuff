@@ -3,6 +3,7 @@
 
 #include <configstuff/config.h>
 #include <netstuff/netclient.h>
+#include <netstuff/netserver.h>
 #include <modemstuff/fsk.h>
 #include <modemstuff/bitdet.h>
 #include <modemstuff/linecode.h>
@@ -17,15 +18,20 @@ ms_bit_detector_t bit_detector;
 ms_linecode_nrzi_decoder_t nrzi_decoder;
 ms_ax25_deframer_t ax25_deframer;
 
+ns_server_t kiss_server;
+
 void data_callback(void *data, uint32_t length);
+void kiss_data_start_callback();
+void kiss_data_callback(void *data, uint32_t length);
+void kiss_data_end_callback();
 
 int main(int argc, const char *argv[])
 {
     cs_config_t config;
     ns_client_t client;
-    int sample_rate, port;
+    int sample_rate, port, kiss_port;
     ms_float mark_freq, space_freq, baud_rate;
-    const char *host, *value;
+    const char *host;
 
     if (argc != ARGS_EXPECTED)
     {
@@ -50,6 +56,7 @@ int main(int argc, const char *argv[])
     mark_freq = atof(cs_config_get_or_exit(&config, "MARK"));
     space_freq = atof(cs_config_get_or_exit(&config, "SPACE"));
     baud_rate = atof(cs_config_get_or_exit(&config, "BAUD"));
+    kiss_port = atoi(cs_config_get_or_exit(&config, "KISSPORT"));
 
     if (ms_fsk_detector_init(&fsk_detector, mark_freq, space_freq, baud_rate, sample_rate))
     {
@@ -60,6 +67,14 @@ int main(int argc, const char *argv[])
     ms_bit_detector_init(&bit_detector, sample_rate, baud_rate);
     ms_linecode_nrzi_decoder_init(&nrzi_decoder);
     ms_ax25_deframer_init(&ax25_deframer);
+
+    if (ns_server_init(&kiss_server, kiss_port))
+    {
+        fprintf(stderr, "Error: ns_server_init() failed\n");
+        return EXIT_FAILURE;
+    }
+
+    ns_server_set_callbacks(&kiss_server, &kiss_data_start_callback, &kiss_data_callback, &kiss_data_end_callback);
 
     if (ns_client_init(&client))
     {
@@ -76,10 +91,15 @@ int main(int argc, const char *argv[])
     }
 
     fprintf(stderr, "Connected to %s:%d\n", host, port);
-    getchar();
+
+    ns_server_start(&kiss_server);
+    fprintf(stderr, "KISS server started\n");
+
+    ns_server_wait(&kiss_server);
 
     ms_fsk_detector_destroy(&fsk_detector);
     ns_client_destroy(&client);
+    ns_server_destroy(&kiss_server);
 
     return EXIT_SUCCESS;
 }
@@ -102,9 +122,25 @@ void data_callback(void *data, uint32_t length)
 
         if ((bit != MS_BIT_NONE) && ms_ax25_deframer_process(&ax25_deframer, &frame, bit))
         {
+            // Print the packet to stderr
             ms_ax25_frame_pack_tnc2(&frame, packet_str);
             fputs(packet_str, stderr);
             fputs("\r\n", stderr);
+
+            // TODO: Pack frame into KISS packet and send it to all connected KISS clients
         }
     }
+}
+
+void kiss_data_start_callback()
+{
+}
+
+void kiss_data_callback(void *data, uint32_t length)
+{
+    fprintf(stderr, "Received %d bytes of KISS data\n", length);
+}
+
+void kiss_data_end_callback()
+{
 }
