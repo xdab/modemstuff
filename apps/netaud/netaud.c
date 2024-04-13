@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include <modemstuff/netstuff/netserver.h>
-#include <modemstuff/datastuff/linkedbuffer.h>
+#include <netstuff/netserver.h>
+#include <datastuff/linkedbuffer.h>
 
 #include "audio.h"
 #include "utils.h"
@@ -22,7 +22,7 @@ int main(char argc, const char *argv[]);
 audio_device_t *parse_args(int argc, const char *argv[], audio_device_t audio_devices[MAX_AUDIO_DEVICES], int num_audio_devices);
 int stream_callback(const void *input_buffer, void *output_buffer, unsigned long frames_per_buffer, const PaStreamCallbackTimeInfo *time_info, PaStreamCallbackFlags status_flags, void *user_data);
 void client_data_start_callback();
-void client_data_chunk_callback(void *data, size_t size);
+void client_data_chunk_callback(void *data, uint32_t size);
 void client_data_end_callback();
 
 int main(char argc, const char *argv[])
@@ -176,7 +176,7 @@ void client_data_start_callback()
     pthread_mutex_lock(&client_data_mutex);
 }
 
-void client_data_chunk_callback(void *data, size_t size)
+void client_data_chunk_callback(void *data, uint32_t size)
 {
     ds_linked_buffer_push(&client_data_buffer, data, size);
 }

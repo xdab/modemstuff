@@ -1,4 +1,4 @@
-#include <modemstuff/netstuff/netserver.h>
+#include <netstuff/netserver.h>
 
 #include <stdio.h>
 #include <netdb.h>
@@ -13,11 +13,11 @@
 #include <pthread.h>
 
 #define CONNECTION_QUEUE_SIZE (5)
-#define CLIENT_DATA_BUF_SIZE (1024)
+#define DATA_BUF_SIZE (1024)
 
 void *server_thread_function(void *data);
 
-int ns_server_init(ns_server_t *server, int port)
+int ns_server_init(ns_server_t *server, uint16_t port)
 {
     struct sockaddr_in server_address;
 
@@ -36,6 +36,15 @@ int ns_server_init(ns_server_t *server, int port)
     if (server->server_socket < 0)
     {
         fprintf(stderr, "Error: socket() failed\n");
+        return -1;
+    }
+
+    // Allow the server socket to be reused immediately after it is closed
+    int reuse = 1;
+    if (setsockopt(server->server_socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
+    {
+        fprintf(stderr, "Error: setsockopt() failed\n");
+        close(server->server_socket);
         return -1;
     }
 
@@ -60,7 +69,7 @@ int ns_server_init(ns_server_t *server, int port)
 
 void ns_server_set_callbacks(ns_server_t *server,
                           void (*client_data_start_callback)(void),
-                          void (*client_data_chunk_callback)(void *, size_t),
+                          void (*client_data_chunk_callback)(void *, uint32_t),
                           void (*client_data_end_callback)(void))
 {
     server->client_data_start_callback = client_data_start_callback;
@@ -84,7 +93,7 @@ void ns_server_wait(ns_server_t *server)
     pthread_join(server->server_thread, NULL);
 }
 
-void ns_server_broadcast(ns_server_t *server, const void *data, size_t size)
+void ns_server_broadcast(ns_server_t *server, const void *data, uint32_t size)
 {
     int i, sent;
 
@@ -137,7 +146,7 @@ void *server_thread_function(void *data)
     struct sockaddr_in client_address;
     socklen_t client_address_length;
     char client_address_str[INET_ADDRSTRLEN];
-    char client_data_buf[CLIENT_DATA_BUF_SIZE];
+    char client_data_buf[DATA_BUF_SIZE];
     int client_data_chunk_len;
     int client_data_total_len;
     ns_server_t *server;
@@ -232,7 +241,7 @@ void *server_thread_function(void *data)
                     do
                     {
                         // Read a chunk of data from the client socket
-                        client_data_chunk_len = recv(server->client_sockets[i], client_data_buf, CLIENT_DATA_BUF_SIZE, 0);
+                        client_data_chunk_len = recv(server->client_sockets[i], client_data_buf, DATA_BUF_SIZE, 0);
                         if (client_data_chunk_len < 0)
                         {
                             // Here there is no need to lock the client_sockets array
@@ -259,7 +268,7 @@ void *server_thread_function(void *data)
                         }
 
                         // Repeat until the chunk is smaller than buffer size
-                    } while (client_data_chunk_len == CLIENT_DATA_BUF_SIZE);
+                    } while (client_data_chunk_len == DATA_BUF_SIZE);
 
                     // Call the client data end callback after all (and not zero) data is received
                     if (client_data_total_len > 0 && server->client_data_end_callback != NULL)

@@ -1,5 +1,5 @@
-#ifndef _MODEMSTUFF_DATASTUFF_LINKEDBUFFER_H
-#define _MODEMSTUFF_DATASTUFF_LINKEDBUFFER_H
+#ifndef _DATASTUFF_LINKEDBUFFER_H
+#define _DATASTUFF_LINKEDBUFFER_H
 
 #include <stdint.h>
 
@@ -27,4 +27,4 @@ void ds_linked_buffer_push(ds_linked_buffer_t *buffer, void *data, uint32_t size
 
 int ds_linked_buffer_pop(ds_linked_buffer_t *buffer, void *data, uint32_t size);
 
-#endif // _MODEMSTUFF_DATASTUFF_LINKEDBUFFER_H
+#endif // _DATASTUFF_LINKEDBUFFER_H

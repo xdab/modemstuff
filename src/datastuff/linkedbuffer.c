@@ -1,4 +1,4 @@
-#include <modemstuff/datastuff/linkedbuffer.h>
+#include <datastuff/linkedbuffer.h>
 
 #include <stdio.h>
 #include <stdlib.h>

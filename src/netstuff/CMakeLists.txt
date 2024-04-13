@@ -1,9 +1,7 @@
-set(HEADER_LIST 
-  "${modemstuff_SOURCE_DIR}/include/modemstuff/netstuff/netserver.h"
-  "${modemstuff_SOURCE_DIR}/include/modemstuff/netstuff/netclient.h"
-)
+file(GLOB_RECURSE HEADER_LIST "${modemstuff_SOURCE_DIR}/include/netstuff/*.h")
+file(GLOB_RECURSE SOURCE_LIST "*.c")
 
-add_library(netstuff netserver.c ${HEADER_LIST})
+add_library(netstuff ${SOURCE_LIST} ${HEADER_LIST})
 target_compile_features(netstuff PUBLIC c_std_99)
 target_include_directories(netstuff PUBLIC ../../include)
 

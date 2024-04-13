@@ -1,2 +1,3 @@
 add_subdirectory(netstuff)
 add_subdirectory(datastuff)
+add_subdirectory(modemstuff)
