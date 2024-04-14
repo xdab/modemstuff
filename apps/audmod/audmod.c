@@ -7,8 +7,8 @@
 #include <modemstuff/fsk.h>
 #include <modemstuff/bitdet.h>
 #include <modemstuff/linecode.h>
-#include <modemstuff/ax25_deframer.h>
-#include <modemstuff/kiss.h>
+#include <hamstuff/ax25_deframer.h>
+#include <hamstuff/kiss.h>
 
 #define ARGS_USED (1)
 #define ARGS_EXPECTED (1 + ARGS_USED)
@@ -17,7 +17,7 @@
 ms_fsk_detector_t fsk_detector;
 ms_bit_detector_t bit_detector;
 ms_linecode_nrzi_decoder_t nrzi_decoder;
-ms_ax25_deframer_t ax25_deframer;
+hs_ax25_deframer_t ax25_deframer;
 
 ns_server_t kiss_server;
 
@@ -67,7 +67,7 @@ int main(int argc, const char *argv[])
 
     ms_bit_detector_init(&bit_detector, sample_rate, baud_rate);
     ms_linecode_nrzi_decoder_init(&nrzi_decoder);
-    ms_ax25_deframer_init(&ax25_deframer);
+    hs_ax25_deframer_init(&ax25_deframer);
 
     if (ns_server_init(&kiss_server, kiss_port))
     {
@@ -111,9 +111,9 @@ void data_callback(void *data, uint32_t length)
     float sample;
     ms_float result;
     ms_bit bit;
-    ms_ax25_frame_t frame;
+    hs_ax25_frame_t frame;
     char buf[512];
-    ms_kiss_message_t kiss_message;
+    hs_kiss_message_t kiss_message;
     int kiss_length;
 
     for (i = 0; i < length; i += sizeof(float))
@@ -123,18 +123,18 @@ void data_callback(void *data, uint32_t length)
         bit = ms_bit_detector_process(&bit_detector, result);
         bit = ms_linecode_nrzi_decode(&nrzi_decoder, bit);
 
-        if ((bit != MS_BIT_NONE) && ms_ax25_deframer_process(&ax25_deframer, &frame, bit))
+        if ((bit != MS_BIT_NONE) && hs_ax25_deframer_process(&ax25_deframer, &frame, bit))
         {
             // Print the packet to stderr
-            ms_ax25_frame_pack_tnc2(&frame, buf);
+            hs_ax25_frame_pack_tnc2(&frame, buf);
             fputs(buf, stderr);
             fputs("\r\n", stderr);
 
             // Send the packet to the KISS clients
             kiss_message.port = 0;
             kiss_message.command = KISS_DATA_FRAME;
-            kiss_message.data_length = ms_ax25_frame_pack(&frame, kiss_message.data);
-            kiss_length = ms_kiss_encode(&kiss_message, buf);
+            kiss_message.data_length = hs_ax25_frame_pack(&frame, kiss_message.data);
+            kiss_length = hs_kiss_encode(&kiss_message, buf);
             ns_server_broadcast(&kiss_server, buf, kiss_length);
         }
     }

@@ -1,4 +1,4 @@
-#include <modemstuff/kiss.h>
+#include <hamstuff/kiss.h>
 
 #define KISS_END 0xC0
 #define KISS_ESC 0xDB
@@ -7,16 +7,16 @@
 
 #define KISS_MIN_FRAME_SIZE 1
 
-void _ms_kiss_decoder_process_frame(ms_kiss_decoder_t *decoder);
+void _hs_kiss_decoder_process_frame(hs_kiss_decoder_t *decoder);
 
-void ms_kiss_decoder_init(ms_kiss_decoder_t *decoder, void (*frame_callback)(ms_kiss_message_t *message))
+void hs_kiss_decoder_init(hs_kiss_decoder_t *decoder, void (*frame_callback)(hs_kiss_message_t *message))
 {
     decoder->state = KISS_STATE_UNDEFINED;
     decoder->buffer_pos = 0;
     decoder->frame_callback = frame_callback;
 }
 
-void ms_kiss_decoder_process(ms_kiss_decoder_t *decoder, ms_byte byte)
+void hs_kiss_decoder_process(hs_kiss_decoder_t *decoder, hs_byte byte)
 {
     switch (decoder->state)
     {
@@ -40,14 +40,14 @@ void ms_kiss_decoder_process(ms_kiss_decoder_t *decoder, ms_byte byte)
             if (decoder->frame_callback && decoder->buffer_pos >= KISS_MIN_FRAME_SIZE)
             {
                 // Process frame
-                _ms_kiss_decoder_process_frame(decoder);
+                _hs_kiss_decoder_process_frame(decoder);
             }
 
             // Begin reading next frame
             decoder->buffer_pos = 0;
             decoder->state = KISS_STATE_READING;
         }
-        else if (decoder->buffer_pos < MS_KISS_DECODER_BUFFER_SIZE)
+        else if (decoder->buffer_pos < HS_KISS_DECODER_BUFFER_SIZE)
         {
             // Copy byte to buffer
             decoder->buffer[decoder->buffer_pos++] = byte;
@@ -60,7 +60,7 @@ void ms_kiss_decoder_process(ms_kiss_decoder_t *decoder, ms_byte byte)
         }
         break;
     case KISS_STATE_READING_ESCAPED:
-        if (decoder->buffer_pos < MS_KISS_DECODER_BUFFER_SIZE)
+        if (decoder->buffer_pos < HS_KISS_DECODER_BUFFER_SIZE)
         {
             // Un-escape byte
             if (byte == KISS_ESC_END)
@@ -81,9 +81,9 @@ void ms_kiss_decoder_process(ms_kiss_decoder_t *decoder, ms_byte byte)
     }
 }
 
-void _ms_kiss_decoder_process_frame(ms_kiss_decoder_t *decoder)
+void _hs_kiss_decoder_process_frame(hs_kiss_decoder_t *decoder)
 {
-    ms_kiss_message_t message;
+    hs_kiss_message_t message;
     int i;
 
     // Interpret (port, command)
@@ -108,7 +108,7 @@ void _ms_kiss_decoder_process_frame(ms_kiss_decoder_t *decoder)
     decoder->frame_callback(&message);
 }
 
-int ms_kiss_encode(ms_kiss_message_t *message, ms_byte *buffer)
+int hs_kiss_encode(hs_kiss_message_t *message, hs_byte *buffer)
 {
     int i;
     int pos = 0;

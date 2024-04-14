@@ -1,9 +1,7 @@
-#include <modemstuff/ax25_deframer.h>
-#include <modemstuff/ax25_crc.h>
+#include <hamstuff/ax25_deframer.h>
+#include <hamstuff/ax25_crc.h>
 
-#include <stdio.h> // debug fprintf
-
-void ms_ax25_deframer_init(ms_ax25_deframer_t *deframer)
+void hs_ax25_deframer_init(hs_ax25_deframer_t *deframer)
 {
     deframer->buffer_pos = 0;
     deframer->raw_bits = 0;
@@ -11,32 +9,32 @@ void ms_ax25_deframer_init(ms_ax25_deframer_t *deframer)
     deframer->unstuffed_bit_count = 0;
 }
 
-ms_bit ms_ax25_deframer_process(ms_ax25_deframer_t *deframer, ms_ax25_frame_t *frame, ms_bit bit)
+hs_bit hs_ax25_deframer_process(hs_ax25_deframer_t *deframer, hs_ax25_frame_t *frame, hs_bit bit)
 {
     int i;
-    ms_bit ret = 0;
+    hs_bit ret = 0;
 
     // Shift in the new bit
     deframer->raw_bits = (deframer->raw_bits << 1) | bit;
 
     // Flag detection
-    if (deframer->raw_bits == FLAG)
+    if (deframer->raw_bits == HS_AX25_FLAG)
     {
         // Look at the buffer to see if there is a valid frame
-        if (deframer->buffer_pos >= MIN_FRAME_LEN)
+        if (deframer->buffer_pos >= HS_AX25_MIN_FRAME_LEN)
         {
             // Validate FCS
             unsigned short received_fcs = deframer->buffer[deframer->buffer_pos - 2] | (deframer->buffer[deframer->buffer_pos - 1] << 8);
 
-            unsigned short computed_fcs = ms_ax25_crc16_init();
+            unsigned short computed_fcs = hs_ax25_crc16_init();
             for (i = 0; i < deframer->buffer_pos - 2; i++)
-                computed_fcs = ms_ax25_crc16_update(deframer->buffer[i], computed_fcs);
-            computed_fcs = ms_ax25_crc16_finalize(computed_fcs);
+                computed_fcs = hs_ax25_crc16_update(deframer->buffer[i], computed_fcs);
+            computed_fcs = hs_ax25_crc16_finalize(computed_fcs);
 
             if (computed_fcs == received_fcs)
             {
                 // Unpack the frame and return 1 to signal that a frame is ready
-                ms_ax25_frame_unpack(frame, deframer->buffer, deframer->buffer_pos);
+                hs_ax25_frame_unpack(frame, deframer->buffer, deframer->buffer_pos);
                 ret = 1;
             }
         }

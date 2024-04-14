@@ -1,7 +1,7 @@
-#include <modemstuff/ax25_crc.h>
+#include <hamstuff/ax25_crc.h>
 
 // http://www.ietf.org/rfc/rfc1549.txt
-const unsigned short MS_AX25_CRC_TABLE[256] = {
+const hs_crc16_t HS_AX25_CRC_TABLE[256] = {
     0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf,
     0x8c48, 0x9dc1, 0xaf5a, 0xbed3, 0xca6c, 0xdbe5, 0xe97e, 0xf8f7,
     0x1081, 0x0108, 0x3393, 0x221a, 0x56a5, 0x472c, 0x75b7, 0x643e,
@@ -35,17 +35,17 @@ const unsigned short MS_AX25_CRC_TABLE[256] = {
     0xf78f, 0xe606, 0xd49d, 0xc514, 0xb1ab, 0xa022, 0x92b9, 0x8330,
     0x7bc7, 0x6a4e, 0x58d5, 0x495c, 0x3de3, 0x2c6a, 0x1ef1, 0x0f78};
 
-unsigned short ms_ax25_crc16_init()
+hs_crc16_t hs_ax25_crc16_init()
 {
     return 0xffff;
 }
 
-unsigned short ms_ax25_crc16_update(unsigned char byte, unsigned short crc)
+hs_crc16_t hs_ax25_crc16_update(hs_byte byte, hs_crc16_t crc)
 {
-    return (crc >> 8) ^ MS_AX25_CRC_TABLE[(crc ^ byte) & 0xff];
+    return (crc >> 8) ^ HS_AX25_CRC_TABLE[(crc ^ byte) & 0xff];
 }
 
-unsigned short ms_ax25_crc16_finalize(unsigned short crc)
+hs_crc16_t hs_ax25_crc16_finalize(hs_crc16_t crc)
 {
     return crc ^ 0xffff;
 }
