@@ -8,6 +8,7 @@
 #include <modemstuff/bitdet.h>
 #include <modemstuff/linecode.h>
 #include <modemstuff/ax25_deframer.h>
+#include <modemstuff/kiss.h>
 
 #define ARGS_USED (1)
 #define ARGS_EXPECTED (1 + ARGS_USED)
@@ -111,7 +112,9 @@ void data_callback(void *data, uint32_t length)
     ms_float result;
     ms_bit bit;
     ms_ax25_frame_t frame;
-    char packet_str[512];
+    char buf[512];
+    ms_kiss_message_t kiss_message;
+    int kiss_length;
 
     for (i = 0; i < length; i += sizeof(float))
     {
@@ -123,11 +126,16 @@ void data_callback(void *data, uint32_t length)
         if ((bit != MS_BIT_NONE) && ms_ax25_deframer_process(&ax25_deframer, &frame, bit))
         {
             // Print the packet to stderr
-            ms_ax25_frame_pack_tnc2(&frame, packet_str);
-            fputs(packet_str, stderr);
+            ms_ax25_frame_pack_tnc2(&frame, buf);
+            fputs(buf, stderr);
             fputs("\r\n", stderr);
 
-            // TODO: Pack frame into KISS packet and send it to all connected KISS clients
+            // Send the packet to the KISS clients
+            kiss_message.port = 0;
+            kiss_message.command = KISS_DATA_FRAME;
+            kiss_message.data_length = ms_ax25_frame_pack(&frame, kiss_message.data);
+            kiss_length = ms_kiss_encode(&kiss_message, buf);
+            ns_server_broadcast(&kiss_server, buf, kiss_length);
         }
     }
 }
