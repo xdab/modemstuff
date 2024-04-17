@@ -5,26 +5,27 @@
 #include <configstuff/config.h>
 #include <netstuff/netclient.h>
 #include <netstuff/netserver.h>
-#include <modemstuff/fsk.h>
-#include <modemstuff/bitdet.h>
-#include <modemstuff/linecode.h>
-#include <hamstuff/ax25_deframer.h>
 #include <hamstuff/kiss.h>
+
+#include "modulator.h"
+#include "demodulator.h"
 
 #define ARGS_USED (1)
 #define ARGS_EXPECTED (1 + ARGS_USED)
 #define ARG_CONFIG 1
 
-ms_fsk_detector_t fsk_detector;
-ms_bit_detector_t bit_detector;
-ms_linecode_nrzi_decoder_t nrzi_decoder;
-hs_ax25_deframer_t ax25_deframer;
+audmod_modulator_t modulator;
+audmod_demodulator_t demodulator;
 
+ns_client_t audio_client;
 ns_server_t kiss_server;
 hs_kiss_decoder_t kiss_decoder;
 pthread_mutex_t kiss_decoder_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void data_callback(void *data, uint32_t length);
+void demodulated_frame_callback(hs_ax25_frame_t *frame);
+void modulated_samples_callback(ms_float *samples, int samples_count);
+
 void kiss_data_start_callback();
 void kiss_data_callback(void *data, uint32_t length);
 void kiss_data_end_callback();
@@ -33,7 +34,6 @@ void incoming_kiss_message_callback(hs_kiss_message_t *message);
 int main(int argc, const char *argv[])
 {
     cs_config_t config;
-    ns_client_t client;
     int sample_rate, port, kiss_port;
     ms_float mark_freq, space_freq, baud_rate;
     const char *host;
@@ -63,23 +63,21 @@ int main(int argc, const char *argv[])
     baud_rate = atof(cs_config_get_or_exit(&config, "BAUD"));
     kiss_port = atoi(cs_config_get_or_exit(&config, "KISSPORT"));
 
-    // Initialize modem and data link layer components
-    if (ms_fsk_detector_init(&fsk_detector, mark_freq, space_freq, baud_rate, sample_rate))
+    // Initialize demodulator
+    if (audmod_demodulator_init(&demodulator, mark_freq, space_freq, baud_rate, sample_rate))
     {
-        fprintf(stderr, "Error: ms_fsk_detector_init() failed\n");
+        fprintf(stderr, "Error: audmod_demodulator_init() failed\n");
         return EXIT_FAILURE;
     }
-    ms_bit_detector_init(&bit_detector, sample_rate, baud_rate);
-    ms_linecode_nrzi_decoder_init(&nrzi_decoder);
-    hs_ax25_deframer_init(&ax25_deframer);
+    audmod_demodulator_set_callbacks(&demodulator, &demodulated_frame_callback);
 
     // Initialize audio server
-    if (ns_client_init(&client))
+    if (ns_client_init(&audio_client))
     {
         fprintf(stderr, "Error: ns_client_init() failed\n");
         return EXIT_FAILURE;
     }
-    ns_client_set_callbacks(&client, &data_callback);
+    ns_client_set_callbacks(&audio_client, &data_callback);
 
     // Initialize KISS server
     hs_kiss_decoder_init(&kiss_decoder, &incoming_kiss_message_callback);
@@ -91,7 +89,7 @@ int main(int argc, const char *argv[])
     ns_server_set_callbacks(&kiss_server, &kiss_data_start_callback, &kiss_data_callback, &kiss_data_end_callback);
 
     // Connect to the audio server
-    if (ns_client_connect(&client, host, port))
+    if (ns_client_connect(&audio_client, host, port))
     {
         fprintf(stderr, "Error: ns_client_connect() failed\n");
         return EXIT_FAILURE;
@@ -108,8 +106,9 @@ int main(int argc, const char *argv[])
     fprintf(stderr, "Exiting...\n");
 
     // Cleanup
-    ms_fsk_detector_destroy(&fsk_detector);
-    ns_client_destroy(&client);
+    audmod_demodulator_destroy(&demodulator);
+    audmod_demodulator_destroy(&demodulator);
+    ns_client_destroy(&audio_client);
     ns_server_destroy(&kiss_server);
 
     return EXIT_SUCCESS;
@@ -117,36 +116,30 @@ int main(int argc, const char *argv[])
 
 void data_callback(void *data, uint32_t length)
 {
-    uint32_t i;
-    float sample;
-    ms_float result;
-    ms_bit bit;
-    hs_ax25_frame_t frame;
+    audmod_demodulator_process(&demodulator, (ms_float *)data, length / sizeof(ms_float));
+}
+
+void demodulated_frame_callback(hs_ax25_frame_t *frame)
+{
     char buf[512];
     hs_kiss_message_t kiss_message;
     int kiss_length;
 
-    for (i = 0; i < length; i += sizeof(float))
-    {
-        sample = *((float *)(data + i));
-        result = ms_fsk_detector_process(&fsk_detector, sample);
-        bit = ms_bit_detector_process(&bit_detector, result);
-        bit = ms_linecode_nrzi_decode(&nrzi_decoder, bit);
+    // Print the packet to stderr
+    hs_ax25_frame_pack_tnc2(frame, buf);
+    fprintf(stderr, "RX %s \n", buf);
 
-        if ((bit != MS_BIT_NONE) && hs_ax25_deframer_process(&ax25_deframer, &frame, bit))
-        {
-            // Print the packet to stderr
-            hs_ax25_frame_pack_tnc2(&frame, buf);
-            fprintf(stderr, "RX %s \n", buf);
+    // Send the packet to the KISS clients
+    kiss_message.port = 0;
+    kiss_message.command = KISS_DATA_FRAME;
+    kiss_message.data_length = hs_ax25_frame_pack(frame, kiss_message.data);
+    kiss_length = hs_kiss_encode(&kiss_message, buf);
+    ns_server_broadcast(&kiss_server, buf, kiss_length);
+}
 
-            // Send the packet to the KISS clients
-            kiss_message.port = 0;
-            kiss_message.command = KISS_DATA_FRAME;
-            kiss_message.data_length = hs_ax25_frame_pack(&frame, kiss_message.data);
-            kiss_length = hs_kiss_encode(&kiss_message, buf);
-            ns_server_broadcast(&kiss_server, buf, kiss_length);
-        }
-    }
+void modulated_samples_callback(ms_float *samples, int samples_count)
+{
+    ns_client_send(&audio_client, (void *)samples, samples_count * sizeof(ms_float));
 }
 
 void kiss_data_start_callback()

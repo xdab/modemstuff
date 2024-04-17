@@ -4,8 +4,6 @@
 #include <hamstuff/hamstuff.h>
 #include <hamstuff/ax25_frame.h>
 
-typedef char hs_bit;
-
 #define HS_AX25_MAX_REPEATER_COUNT 8
 #define HS_AX25_MAX_INFO_LEN 255
 #define HS_AX25_FLAG 0x7e

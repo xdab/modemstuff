@@ -58,9 +58,16 @@ typedef struct ms_fsk_generator
 {
     ms_float mark_freq;
     ms_float space_freq;
+    ms_float baud_rate;
+    ms_float sample_rate;
     ms_dds_t fsk_dds;
+
 } ms_fsk_generator_t;
 
-// TODO: basic functions 
+int ms_fsk_generator_init(ms_fsk_generator_t *gen, ms_float mark_freq, ms_float space_freq, ms_float baud_rate, ms_float sample_rate);
+
+int ms_fsk_generator_process(ms_fsk_generator_t *gen, ms_bit bit, ms_float *out_samples, int out_samples_size);
+
+void ms_fsk_generator_destroy(ms_fsk_generator_t *gen);
 
 #endif // _MODEMSTUFF_FSK_H
