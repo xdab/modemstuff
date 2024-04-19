@@ -60,20 +60,16 @@ void hs_ax25_frame_unpack(hs_ax25_frame_t *frame, const hs_byte *inp, const int 
     hs_byte is_last = hs_ax25_call_unpack(&frame->src, &inp[i]);
     i += 7;
 
+    // Unpack repeaters
     frame->repeater_count = 0;
-    // If source is not last, unpack repeaters
-    if (!is_last)
+    while (!is_last && frame->repeater_count < HS_AX25_MAX_REPEATER_COUNT)
     {
-        // Unpack repeaters
-        while (frame->repeater_count < HS_AX25_MAX_REPEATER_COUNT)
-        {
-            hs_ax25_call_t *repeater = &frame->repeaters[frame->repeater_count];
-            is_last = hs_ax25_call_unpack(repeater, &inp[i]);
-            i += 7;
-            if (is_last)
-                break;
-            frame->repeater_count++;
-        }
+        hs_ax25_call_t *repeater = &frame->repeaters[frame->repeater_count];
+        is_last = hs_ax25_call_unpack(repeater, &inp[i]);
+        frame->repeater_count++;
+        i += 7;
+        if (is_last)
+            break;
     }
 
     // Unpack control and protocol
@@ -109,7 +105,7 @@ int hs_ax25_frame_pack_tnc2(hs_ax25_frame_t *frame, char *str)
         i += hs_ax25_call_to_str(&frame->repeaters[j], str + i);
     }
 
-    // Pack control and protocol
+    // Info separator
     str[i++] = ':';
 
     // Pack info

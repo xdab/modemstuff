@@ -1,9 +1,9 @@
 #ifndef _DATASTUFF_BITARRAY_H
 #define _DATASTUFF_BITARRAY_H
 
-typedef int ba_bit_t;
+typedef int ds_ba_bit_t;
 
-typedef struct bitarray
+typedef struct ds_bitarray
 {
     void *supporting_array;
     int supporting_array_size;
@@ -12,12 +12,12 @@ typedef struct bitarray
     int used_full_bytes;
     int used_bits_in_last_byte;
 
-} bitarray_t;
+} ds_bitarray_t;
 
-int bitarray_init(bitarray_t *ba, void *supporting_array, int supporting_array_size);
+int ds_bitarray_init(ds_bitarray_t *ba, void *supporting_array, int supporting_array_size);
 
-int bitarray_clear(bitarray_t *ba);
+int ds_bitarray_clear(ds_bitarray_t *ba);
 
-int bitarray_append(bitarray_t *ba, ba_bit_t bit);
+int ds_bitarray_append(ds_bitarray_t *ba, ds_ba_bit_t bit);
 
 #endif // _DATASTUFF_BITARRAY_H

@@ -10,6 +10,8 @@
 #include "modulator.h"
 #include "demodulator.h"
 
+// #define MOCK_AUDIO "tnctest02.raw"
+
 #define ARGS_USED (1)
 #define ARGS_EXPECTED (1 + ARGS_USED)
 #define ARG_CONFIG 1
@@ -71,13 +73,7 @@ int main(int argc, const char *argv[])
     }
     audmod_demodulator_set_callbacks(&demodulator, &demodulated_frame_callback);
 
-    // Initialize audio server
-    if (ns_client_init(&audio_client))
-    {
-        fprintf(stderr, "Error: ns_client_init() failed\n");
-        return EXIT_FAILURE;
-    }
-    ns_client_set_callbacks(&audio_client, &data_callback);
+#ifndef MOCK_AUDIO
 
     // Initialize KISS server
     hs_kiss_decoder_init(&kiss_decoder, &incoming_kiss_message_callback);
@@ -88,6 +84,14 @@ int main(int argc, const char *argv[])
     }
     ns_server_set_callbacks(&kiss_server, &kiss_data_start_callback, &kiss_data_callback, &kiss_data_end_callback);
 
+    // Initialize audio server
+    if (ns_client_init(&audio_client))
+    {
+        fprintf(stderr, "Error: ns_client_init() failed\n");
+        return EXIT_FAILURE;
+    }
+    ns_client_set_callbacks(&audio_client, &data_callback);
+
     // Connect to the audio server
     if (ns_client_connect(&audio_client, host, port))
     {
@@ -96,7 +100,7 @@ int main(int argc, const char *argv[])
     }
     fprintf(stderr, "Connected to %s:%d\n", host, port);
 
-    // Start KISS server
+        // Start KISS server
     ns_server_start(&kiss_server);
     fprintf(stderr, "KISS server started\n");
 
@@ -107,9 +111,39 @@ int main(int argc, const char *argv[])
 
     // Cleanup
     audmod_demodulator_destroy(&demodulator);
-    audmod_demodulator_destroy(&demodulator);
+    audmod_modulator_destroy(&modulator);
     ns_client_destroy(&audio_client);
     ns_server_destroy(&kiss_server);
+
+#else
+
+    // Read audio samples from file
+    FILE *file = fopen(MOCK_AUDIO, "rb");
+    if (file == NULL)
+    {
+        fprintf(stderr, "Error: fopen() failed\n");
+        return EXIT_FAILURE;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    const int sample_batch_size = 1024;
+    long sample_count = file_size / sizeof(ms_float);
+    for (long i = 0; i < sample_count; i += sample_batch_size)
+    {
+        ms_float samples[sample_batch_size];
+        fread(samples, sizeof(ms_float), sample_batch_size, file);
+        data_callback(samples, sample_batch_size * sizeof(ms_float));
+    }
+
+    fclose(file);
+
+    // Cleanup
+    audmod_demodulator_destroy(&demodulator);
+
+#endif
 
     return EXIT_SUCCESS;
 }
@@ -119,6 +153,8 @@ void data_callback(void *data, uint32_t length)
     audmod_demodulator_process(&demodulator, (ms_float *)data, length / sizeof(ms_float));
 }
 
+int frame_count = 0;
+
 void demodulated_frame_callback(hs_ax25_frame_t *frame)
 {
     char buf[512];
@@ -127,14 +163,17 @@ void demodulated_frame_callback(hs_ax25_frame_t *frame)
 
     // Print the packet to stderr
     hs_ax25_frame_pack_tnc2(frame, buf);
-    fprintf(stderr, "RX %s \n", buf);
+    fprintf(stderr, "\t%d\tRX\t%s \n", frame_count++, buf);
+    fflush(stderr);
 
+#ifndef MOCK_AUDIO
     // Send the packet to the KISS clients
     kiss_message.port = 0;
     kiss_message.command = KISS_DATA_FRAME;
     kiss_message.data_length = hs_ax25_frame_pack(frame, kiss_message.data);
     kiss_length = hs_kiss_encode(&kiss_message, buf);
     ns_server_broadcast(&kiss_server, buf, kiss_length);
+#endif
 }
 
 void modulated_samples_callback(ms_float *samples, int samples_count)
