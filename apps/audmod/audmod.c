@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include <configstuff/config.h>
 #include <netstuff/netclient.h>
@@ -10,7 +11,8 @@
 #include "modulator.h"
 #include "demodulator.h"
 
-// #define MOCK_AUDIO "tnctest02.raw"
+// #define MOCK_AUDIO_INPUT "tnctest02.raw"
+// #define MOCK_BEACON
 
 #define ARGS_USED (1)
 #define ARGS_EXPECTED (1 + ARGS_USED)
@@ -73,7 +75,11 @@ int main(int argc, const char *argv[])
     }
     audmod_demodulator_set_callbacks(&demodulator, &demodulated_frame_callback);
 
-#ifndef MOCK_AUDIO
+    // Initialize modulator
+    audmod_modulator_init(&modulator, mark_freq, space_freq, baud_rate, sample_rate);
+    audmod_modulator_set_callbacks(&modulator, &modulated_samples_callback);
+
+#ifndef MOCK_AUDIO_INPUT
 
     // Initialize KISS server
     hs_kiss_decoder_init(&kiss_decoder, &incoming_kiss_message_callback);
@@ -100,9 +106,36 @@ int main(int argc, const char *argv[])
     }
     fprintf(stderr, "Connected to %s:%d\n", host, port);
 
-        // Start KISS server
+    // Start KISS server
     ns_server_start(&kiss_server);
     fprintf(stderr, "KISS server started\n");
+
+#ifdef MOCK_BEACON
+    char buf[512];
+    hs_ax25_frame_t frame;
+    hs_ax25_frame_init(&frame);
+
+    hs_ax25_call_from_str(&frame.dest, "APRS20");
+    hs_ax25_call_from_str(&frame.src, "AB1CDE");
+
+    frame.control = 0x03;
+    frame.protocol = 0xf0;
+
+    int frame_number = 0;
+
+    sleep(1);
+    while (1)
+    {
+        frame.info_len = sprintf(frame.info, "!5225.  N/02044.  E Beacon %d", frame_number++);
+        audmod_modulator_process(&modulator, &frame);
+
+        hs_ax25_frame_pack_tnc2(&frame, buf);
+        fprintf(stderr, "\t%d\tTX\t%s \n", frame_number, buf);
+        fflush(stderr);
+
+        sleep(2);
+    }
+#endif
 
     // Wait for KISS server thread
     ns_server_wait(&kiss_server);
@@ -110,15 +143,13 @@ int main(int argc, const char *argv[])
     fprintf(stderr, "Exiting...\n");
 
     // Cleanup
-    audmod_demodulator_destroy(&demodulator);
-    audmod_modulator_destroy(&modulator);
     ns_client_destroy(&audio_client);
     ns_server_destroy(&kiss_server);
 
 #else
 
     // Read audio samples from file
-    FILE *file = fopen(MOCK_AUDIO, "rb");
+    FILE *file = fopen(MOCK_AUDIO_INPUT, "rb");
     if (file == NULL)
     {
         fprintf(stderr, "Error: fopen() failed\n");
@@ -140,10 +171,11 @@ int main(int argc, const char *argv[])
 
     fclose(file);
 
+#endif
+
     // Cleanup
     audmod_demodulator_destroy(&demodulator);
-
-#endif
+    audmod_modulator_destroy(&modulator);
 
     return EXIT_SUCCESS;
 }
@@ -163,17 +195,15 @@ void demodulated_frame_callback(hs_ax25_frame_t *frame)
 
     // Print the packet to stderr
     hs_ax25_frame_pack_tnc2(frame, buf);
-    fprintf(stderr, "\t%d\tRX\t%s \n", frame_count++, buf);
+    fprintf(stderr, "\t%d\tRX\t%s \n", ++frame_count, buf);
     fflush(stderr);
 
-#ifndef MOCK_AUDIO
     // Send the packet to the KISS clients
     kiss_message.port = 0;
     kiss_message.command = KISS_DATA_FRAME;
     kiss_message.data_length = hs_ax25_frame_pack(frame, kiss_message.data);
     kiss_length = hs_kiss_encode(&kiss_message, buf);
     ns_server_broadcast(&kiss_server, buf, kiss_length);
-#endif
 }
 
 void modulated_samples_callback(ms_float *samples, int samples_count)
@@ -211,5 +241,8 @@ void incoming_kiss_message_callback(hs_kiss_message_t *message)
         // Print the packet to stderr
         hs_ax25_frame_pack_tnc2(&frame, buf);
         fprintf(stderr, "TX %s \n", buf);
+
+        // Modulate and send the packet (by modulator's samples callback)
+        audmod_modulator_process(&modulator, &frame);
     }
 }

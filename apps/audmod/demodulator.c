@@ -1,6 +1,12 @@
 #include "demodulator.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+
+#define NOISE_AMPLITUDE 0.02
+#define NOISE_RESOLUTION 10000
+#define NOISE() (NOISE_AMPLITUDE * (2.0 * (((ms_float) (rand() % NOISE_RESOLUTION)) / NOISE_RESOLUTION) - 1.0))
+FILE *f;
 
 int audmod_demodulator_init(audmod_demodulator_t *demod, ms_float mark_freq, ms_float space_freq, ms_float baud_rate, ms_float sample_rate)
 {
@@ -13,6 +19,8 @@ int audmod_demodulator_init(audmod_demodulator_t *demod, ms_float mark_freq, ms_
     ms_bit_detector_init(&demod->bit_detector, sample_rate, baud_rate);
     ms_linecode_nrzi_decoder_init(&demod->nrzi_decoder);
     hs_ax25_deframer_init(&demod->ax25_deframer);
+
+    f = fopen("output.raw", "wb");
 
     return 0;
 }
@@ -31,7 +39,10 @@ void audmod_demodulator_process(audmod_demodulator_t *demod, ms_float *samples, 
 
     for (i = 0; i < samples_count; i++)
     {
+        samples[i] += NOISE();
         symbol = ms_fsk_detector_process(&demod->fsk_detector, samples[i]);
+        fwrite(&symbol, sizeof(ms_float), 1, f);
+        
         bit = ms_bit_detector_process(&demod->bit_detector, symbol);
         bit = ms_linecode_nrzi_decode(&demod->nrzi_decoder, bit);
 

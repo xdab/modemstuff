@@ -1,4 +1,5 @@
 #include <hamstuff/ax25_frame.h>
+#include <hamstuff/ax25_crc.h>
 
 void hs_ax25_frame_init(hs_ax25_frame_t *frame)
 {
@@ -36,12 +37,13 @@ int hs_ax25_frame_pack(hs_ax25_frame_t *frame, hs_byte *out)
     for (j = 0; j < frame->info_len; i++, j++)
         out[i] = frame->info[j];
 
-    // Calculate FCS
-    unsigned short crc = 0x0000; // TODO: CRC16_X25_INIT
-
-    // Pack FCS, big-endian
-    out[i++] = crc >> 8;
-    out[i++] = crc & 0xff;
+    // Calculate and pack FCS
+    hs_crc16_t crc = hs_ax25_crc16_init();
+    for (j = 0; j < i; j++)
+        crc = hs_ax25_crc16_update(out[j], crc);
+    crc = hs_ax25_crc16_finalize(crc);
+    out[i++] = (crc & 0xff);
+    out[i++] = (crc >> 8);
 
     return i;
 }

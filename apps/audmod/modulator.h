@@ -12,6 +12,9 @@ typedef struct audmod_modulator
     int tx_delay; // in milliseconds
     int tx_tail; // in milliseconds
 
+    ms_bit last_bit;
+    ms_bit nrzi_bit;
+
     void (*samples_callback)(ms_float *samples, int samples_count);
 
 } audmod_modulator_t;
@@ -31,4 +34,7 @@ void audmod_modulator_process(
     audmod_modulator_t *mod,
     hs_ax25_frame_t *frame);
 
+void audmod_modulator_destroy(
+    audmod_modulator_t *mod);
+    
 #endif // _AUDMOD_MODULATOR_H
