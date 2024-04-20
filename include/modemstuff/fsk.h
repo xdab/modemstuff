@@ -44,10 +44,34 @@ typedef struct ms_fsk_detector
 
 } ms_fsk_detector_t;
 
+/**
+ * Initialize the FSK detector.
+ *
+ * @param det The FSK detector to initialize.
+ * @param mark_freq Mark frequency.
+ * @param space_freq Space frequency.
+ * @param baud_rate Baud rate.
+ * @param sample_rate Sample rate.
+ *
+ * @return 0 if successful, 1 otherwise.
+ */
 int ms_fsk_detector_init(ms_fsk_detector_t *det, ms_float mark_freq, ms_float space_freq, ms_float baud_rate, ms_float sample_rate);
 
+/**
+ * Process a sample.
+ *
+ * @param det The FSK detector.
+ * @param sample The sample to process.
+ *
+ * @return The relative mark/space tone strength = soft symbol.
+ */
 ms_float ms_fsk_detector_process(ms_fsk_detector_t *det, ms_float sample);
 
+/**
+ * Destroy the FSK detector.
+ *
+ * @param det The FSK detector to destroy.
+ */
 void ms_fsk_detector_destroy(ms_fsk_detector_t *det);
 
 // FSK generator
@@ -64,10 +88,36 @@ typedef struct ms_fsk_generator
 
 } ms_fsk_generator_t;
 
+/**
+ * Initialize the FSK generator.
+ *
+ * @param gen The FSK generator to initialize.
+ * @param mark_freq Mark frequency.
+ * @param space_freq Space frequency.
+ * @param baud_rate Baud rate.
+ * @param sample_rate Sample rate.
+ *
+ * @return 0 if successful, 1 otherwise.
+ */
 int ms_fsk_generator_init(ms_fsk_generator_t *gen, ms_float mark_freq, ms_float space_freq, ms_float baud_rate, ms_float sample_rate);
 
+/**
+ * Modulate a bit.
+ *
+ * @param gen The FSK generator.
+ * @param bit The bit to modulate.
+ * @param out_samples The output samples.
+ * @param out_samples_size The size of the output samples buffer.
+ *
+ * @return The number of samples written to the output buffer.
+ */
 int ms_fsk_generator_process(ms_fsk_generator_t *gen, ms_bit bit, ms_float *out_samples, int out_samples_size);
 
+/**
+ * Destroy the FSK generator.
+ *
+ * @param gen The FSK generator to destroy.
+ */
 void ms_fsk_generator_destroy(ms_fsk_generator_t *gen);
 
 #endif // _MODEMSTUFF_FSK_H

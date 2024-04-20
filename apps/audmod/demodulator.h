@@ -1,6 +1,8 @@
 #ifndef _AUDMOD_DEMODULATOR_H
 #define _AUDMOD_DEMODULATOR_H
 
+#include "config.h"
+
 #include <modemstuff/fsk.h>
 #include <modemstuff/bitdet.h>
 #include <modemstuff/linecode.h>
@@ -16,23 +18,45 @@ typedef struct audmod_demodulator
 
 } audmod_demodulator_t;
 
+/**
+ * Initialize the demodulator.
+ *
+ * @param demod The demodulator to initialize.
+ * @param config The configuration to use.
+ * @return 0 on success, 1 on error.
+ */
 int audmod_demodulator_init(
     audmod_demodulator_t *demod,
-    ms_float mark_freq,
-    ms_float space_freq,
-    ms_float baud_rate,
-    ms_float sample_rate);
+    audmod_config_t *config);
 
+/**
+ * Set the callbacks for the demodulator.
+ *
+ * @param demod The demodulator.
+ * @param frame_callback The callback for demodulated frames.
+ */
 void audmod_demodulator_set_callbacks(
     audmod_demodulator_t *demod,
     void (*frame_callback)(hs_ax25_frame_t *frame));
 
+/**
+ * Process samples.
+ *
+ * @param demod The demodulator.
+ * @param samples The samples to process.
+ * @param samples_count The number of samples.
+ */
 void audmod_demodulator_process(
     audmod_demodulator_t *demod,
     ms_float *samples,
     int samples_count);
 
+/**
+ * Destroy the demodulator.
+ *
+ * @param demod The demodulator to destroy.
+ */
 void audmod_demodulator_destroy(
     audmod_demodulator_t *demod);
-    
+
 #endif // _AUDMOD_DEMODULATOR_H

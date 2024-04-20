@@ -63,27 +63,47 @@ int cs_config_read(cs_config_t *config, const char *config_file)
     return 0;
 }
 
-const char *cs_config_get(cs_config_t *config, const char *key)
+int cs_config_get_str(cs_config_t *config, const char *key, char **out_value)
 {
     int i;
 
     for (i = 0; i < config->entries_count; i++)
         if (strcmp(config->entries[i].key, key) == 0)
-            return config->entries[i].value;
+        {
+            if (out_value != NULL)
+                *out_value = config->entries[i].value;
+            return 0;
+        }
 
-    return NULL;
+    return 1;
 }
 
-const char *cs_config_get_or_exit(cs_config_t *config, const char *key)
+int cs_config_get_int(cs_config_t *config, const char *key, int *out_value)
 {
-    const char *value;
+    char *value;
+    int key_not_found;
 
-    value = cs_config_get(config, key);
-    if (value == NULL)
-    {
-        fprintf(stderr, "Error: No %s specified in config file\n", key);
-        exit(EXIT_FAILURE);
-    }
+    key_not_found = cs_config_get_str(config, key, &value);
+    if (key_not_found)
+        return key_not_found;
 
-    return value;
+    if (out_value != NULL)
+        *out_value = atoi(value);
+
+    return 0;
+}
+
+int cs_config_get_float(cs_config_t *config, const char *key, float *out_value)
+{
+    char *value;
+    int key_not_found;
+
+    key_not_found = cs_config_get_str(config, key, &value);
+    if (key_not_found)
+        return key_not_found;
+
+    if (out_value != NULL)
+        *out_value = atof(value);
+
+    return 0;
 }

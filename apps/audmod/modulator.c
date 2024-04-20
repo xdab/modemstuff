@@ -3,35 +3,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define DEFAULT_TX_DELAY 300
+#define DEFAULT_TX_TAIL 50
+
 #define MIN_HEAD_FLAGS 4
 #define MIN_TAIL_FLAGS 2
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 void _audmod_modulator_process(audmod_modulator_t *mod, ms_bit bit)
 {
-    ms_float samples[512]; // TODO make variable
+    const int MAX_SAMPLES = 512; // TODO make variable
+
+    ms_float samples[MAX_SAMPLES];
     int samples_count;
 
-    // NRZI
-    if (bit == MS_BIT_ZERO)
-        mod->nrzi_bit ^= 1;
-
-    samples_count = ms_fsk_generator_process(&mod->ms_fsk_generator, mod->nrzi_bit, samples, 512);
+    bit = ms_linecode_nrzi_encode(&mod->nrzi, bit);
+    samples_count = ms_fsk_generator_process(&mod->ms_fsk_generator, bit, samples, MAX_SAMPLES);
 
     if (mod->samples_callback != NULL)
         mod->samples_callback(samples, samples_count);
 }
 
-void audmod_modulator_init(audmod_modulator_t *mod, ms_float mark_freq, ms_float space_freq, ms_float baud_rate, ms_float sample_rate)
+void audmod_modulator_init(audmod_modulator_t *mod, audmod_config_t *config)
 {
-    ms_fsk_generator_init(&mod->ms_fsk_generator, mark_freq, space_freq, baud_rate, sample_rate);
-
-    mod->baud_rate = baud_rate;
-    mod->sample_rate = sample_rate;
-
-    // TODO make variable
-    mod->tx_delay = 200;
-    mod->tx_tail = 20;
+    ms_fsk_generator_init(&mod->ms_fsk_generator, config->mark_freq, config->space_freq, config->baud_rate, config->sample_rate);
+    mod->baud_rate = config->baud_rate;
+    mod->sample_rate = config->sample_rate;
+    mod->tx_delay = DEFAULT_TX_DELAY;
+    mod->tx_tail = DEFAULT_TX_TAIL;
 }
 
 void audmod_modulator_set_callbacks(audmod_modulator_t *mod, void (*samples_callback)(ms_float *samples, int samples_count))
@@ -41,10 +40,11 @@ void audmod_modulator_set_callbacks(audmod_modulator_t *mod, void (*samples_call
 
 void audmod_modulator_process(audmod_modulator_t *mod, hs_ax25_frame_t *frame)
 {
-    char packed_frame[512];
+    const int MAX_PACKED_FRAME_SIZE = 512;
 
-    mod->last_bit = MS_BIT_ZERO;
-    mod->nrzi_bit = MS_BIT_ZERO;
+    char packed_frame[MAX_PACKED_FRAME_SIZE];
+
+    ms_linecode_nrzi_encoder_init(&mod->nrzi);
 
     // Insert TX delay worth of flags (without stuffing)
     int flag_count = mod->tx_delay * mod->baud_rate / 8000;
@@ -61,7 +61,6 @@ void audmod_modulator_process(audmod_modulator_t *mod, hs_ax25_frame_t *frame)
     int packed_frame_bytes = hs_ax25_frame_pack(frame, packed_frame);
     int ones_count = 0;
     for (int i = 0; i < packed_frame_bytes; i++)
-    {
         for (int j = 0; j < 8; j++)
         {
             int bit = packed_frame[i] & (1 << j);
@@ -80,7 +79,6 @@ void audmod_modulator_process(audmod_modulator_t *mod, hs_ax25_frame_t *frame)
                 ones_count = 0;
             }
         }
-    }
 
     // Insert TX tail worth of flags (without stuffing)
     flag_count = mod->tx_tail * mod->baud_rate / 8000;
