@@ -39,13 +39,16 @@ int ns_client_connect(ns_client_t *client, const char *host, uint16_t port)
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(port);
 
-    // Get the server's IP address
+    // Find server host in host database
     host_db_entry = gethostbyname(host);
     if (host_db_entry == NULL)
     {
         fprintf(stderr, "Error: gethostbyname() failed\n");
         return -1;
     }
+
+    // Extract the server's IP address from the host database entry
+    memcpy(&server_address.sin_addr.s_addr, host_db_entry->h_addr_list[0], host_db_entry->h_length);
 
     // Create a new client socket
     client->socket = socket(AF_INET, SOCK_STREAM, 0);
