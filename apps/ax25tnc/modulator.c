@@ -10,7 +10,7 @@
 #define MIN_TAIL_FLAGS 2
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-void _audmod_modulator_process(audmod_modulator_t *mod, ms_bit bit)
+void _ax25tnc_modulator_process(ax25tnc_modulator_t *mod, ms_bit bit)
 {
     const int MAX_SAMPLES = 512; // TODO make variable
 
@@ -24,7 +24,7 @@ void _audmod_modulator_process(audmod_modulator_t *mod, ms_bit bit)
         mod->samples_callback(samples, samples_count);
 }
 
-void audmod_modulator_init(audmod_modulator_t *mod, audmod_config_t *config)
+void ax25tnc_modulator_init(ax25tnc_modulator_t *mod, ax25tnc_config_t *config)
 {
     ms_fsk_generator_init(&mod->ms_fsk_generator, config->mark_freq, config->space_freq, config->baud_rate, config->sample_rate);
     mod->baud_rate = config->baud_rate;
@@ -33,12 +33,12 @@ void audmod_modulator_init(audmod_modulator_t *mod, audmod_config_t *config)
     mod->tx_tail = DEFAULT_TX_TAIL;
 }
 
-void audmod_modulator_set_callbacks(audmod_modulator_t *mod, void (*samples_callback)(ms_float *samples, int samples_count))
+void ax25tnc_modulator_set_callbacks(ax25tnc_modulator_t *mod, void (*samples_callback)(ms_float *samples, int samples_count))
 {
     mod->samples_callback = samples_callback;
 }
 
-void audmod_modulator_process(audmod_modulator_t *mod, hs_ax25_frame_t *frame)
+void ax25tnc_modulator_process(ax25tnc_modulator_t *mod, hs_ax25_frame_t *frame)
 {
     const int MAX_PACKED_FRAME_SIZE = 512;
 
@@ -51,10 +51,10 @@ void audmod_modulator_process(audmod_modulator_t *mod, hs_ax25_frame_t *frame)
     flag_count = MAX(flag_count, MIN_HEAD_FLAGS);
     for (int i = 0; i < flag_count; i++)
     {
-        _audmod_modulator_process(mod, 0);
+        _ax25tnc_modulator_process(mod, 0);
         for (int j = 0; j < 6; j++)
-            _audmod_modulator_process(mod, 1);
-        _audmod_modulator_process(mod, 0);
+            _ax25tnc_modulator_process(mod, 1);
+        _ax25tnc_modulator_process(mod, 0);
     }
 
     // Insert packed frame (with stuffing)
@@ -66,7 +66,7 @@ void audmod_modulator_process(audmod_modulator_t *mod, hs_ax25_frame_t *frame)
             int bit = packed_frame[i] & (1 << j);
             bit = bit ? 1 : 0;
 
-            _audmod_modulator_process(mod, bit);
+            _ax25tnc_modulator_process(mod, bit);
 
             if (bit)
                 ones_count++;
@@ -75,7 +75,7 @@ void audmod_modulator_process(audmod_modulator_t *mod, hs_ax25_frame_t *frame)
 
             if (ones_count == 5)
             {
-                _audmod_modulator_process(mod, 0);
+                _ax25tnc_modulator_process(mod, 0);
                 ones_count = 0;
             }
         }
@@ -85,14 +85,14 @@ void audmod_modulator_process(audmod_modulator_t *mod, hs_ax25_frame_t *frame)
     flag_count = MAX(flag_count, MIN_TAIL_FLAGS);
     for (int i = 0; i < flag_count; i++)
     {
-        _audmod_modulator_process(mod, 0);
+        _ax25tnc_modulator_process(mod, 0);
         for (int j = 0; j < 6; j++)
-            _audmod_modulator_process(mod, 1);
-        _audmod_modulator_process(mod, 0);
+            _ax25tnc_modulator_process(mod, 1);
+        _ax25tnc_modulator_process(mod, 0);
     }
 }
 
-void audmod_modulator_destroy(audmod_modulator_t *mod)
+void ax25tnc_modulator_destroy(ax25tnc_modulator_t *mod)
 {
     ms_fsk_generator_destroy(&mod->ms_fsk_generator);
 }

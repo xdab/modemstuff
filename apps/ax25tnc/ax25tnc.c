@@ -15,8 +15,8 @@
 #define ARGS_EXPECTED (1 + ARGS_USED)
 #define ARG_CONFIG 1
 
-audmod_modulator_t modulator;
-audmod_demodulator_t demodulator;
+ax25tnc_modulator_t modulator;
+ax25tnc_demodulator_t demodulator;
 
 ns_client_t audio_client;
 ns_server_t kiss_server;
@@ -34,7 +34,7 @@ void incoming_kiss_message_callback(hs_kiss_message_t *message);
 
 int main(int argc, const char *argv[])
 {
-    audmod_config_t config;
+    ax25tnc_config_t config;
 
     if (argc != ARGS_EXPECTED)
     {
@@ -48,23 +48,23 @@ int main(int argc, const char *argv[])
     }
 
     // Read configuration file
-    if (audmod_config_read(&config, argv[ARG_CONFIG]))
+    if (ax25tnc_config_read(&config, argv[ARG_CONFIG]))
     {
-        fprintf(stderr, "Error: audmod_config_read()\n");
+        fprintf(stderr, "Error: ax25tnc_config_read()\n");
         return EXIT_FAILURE;
     }
 
     // Initialize demodulator
-    if (audmod_demodulator_init(&demodulator, &config))
+    if (ax25tnc_demodulator_init(&demodulator, &config))
     {
-        fprintf(stderr, "Error: audmod_demodulator_init() failed\n");
+        fprintf(stderr, "Error: ax25tnc_demodulator_init() failed\n");
         return EXIT_FAILURE;
     }
-    audmod_demodulator_set_callbacks(&demodulator, &demodulated_frame_callback);
+    ax25tnc_demodulator_set_callbacks(&demodulator, &demodulated_frame_callback);
 
     // Initialize modulator
-    audmod_modulator_init(&modulator, &config);
-    audmod_modulator_set_callbacks(&modulator, &modulated_samples_callback);
+    ax25tnc_modulator_init(&modulator, &config);
+    ax25tnc_modulator_set_callbacks(&modulator, &modulated_samples_callback);
 
     // Initialize KISS server
     hs_kiss_decoder_init(&kiss_decoder, &incoming_kiss_message_callback);
@@ -102,8 +102,8 @@ int main(int argc, const char *argv[])
     // Cleanup
     ns_client_destroy(&audio_client);
     ns_server_destroy(&kiss_server);
-    audmod_demodulator_destroy(&demodulator);
-    audmod_modulator_destroy(&modulator);
+    ax25tnc_demodulator_destroy(&demodulator);
+    ax25tnc_modulator_destroy(&modulator);
 
     return EXIT_SUCCESS;
 }
@@ -111,7 +111,7 @@ int main(int argc, const char *argv[])
 void data_callback(void *data, uint32_t length)
 {
     // Pass the samples to the demodulator
-    audmod_demodulator_process(&demodulator, (ms_float *)data, length / sizeof(ms_float));
+    ax25tnc_demodulator_process(&demodulator, (ms_float *)data, length / sizeof(ms_float));
 }
 
 void demodulated_frame_callback(hs_ax25_frame_t *frame)
@@ -175,7 +175,7 @@ void incoming_kiss_message_callback(hs_kiss_message_t *message)
         fprintf(stderr, "\tTX\t%s\n", buf);
 
         // Modulate and send the packet (by modulator's samples callback)
-        audmod_modulator_process(&modulator, &frame);
+        ax25tnc_modulator_process(&modulator, &frame);
         break;
 
     case KISS_TX_DELAY:

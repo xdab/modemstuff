@@ -23,7 +23,7 @@
         return 2;                                                               \
     }
 
-int audmod_config_read(audmod_config_t *config, const char *config_file)
+int ax25tnc_config_read(ax25tnc_config_t *config, const char *config_file)
 {
     cs_config_t cs_config;
     char *host;

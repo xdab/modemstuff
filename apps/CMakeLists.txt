@@ -1,2 +1,2 @@
 add_subdirectory(netaud)
-add_subdirectory(audmod)
+add_subdirectory(ax25tnc)

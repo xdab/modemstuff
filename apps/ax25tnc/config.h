@@ -1,9 +1,9 @@
-#ifndef _AUDMOD_CONFIG_H
-#define _AUDMOD_CONFIG_H
+#ifndef _AX25TNC_CONFIG_H
+#define _AX25TNC_CONFIG_H
 
 #include <configstuff/config.h>
 
-typedef struct audmod_config
+typedef struct ax25tnc_config
 {
     char host[CONFIG_MAX_VALUE_LENGTH];
     int port;
@@ -12,7 +12,7 @@ typedef struct audmod_config
     float mark_freq;
     float space_freq;
     float baud_rate;
-} audmod_config_t;
+} ax25tnc_config_t;
 
 /**
  * Read configuration file.
@@ -22,8 +22,8 @@ typedef struct audmod_config
  *
  * @return 0 if success, otherwise if error.
  */
-int audmod_config_read(
-    audmod_config_t *config,
+int ax25tnc_config_read(
+    ax25tnc_config_t *config,
     const char *config_file);
 
-#endif // _AUDMOD_CONFIG_H
+#endif // _AX25TNC_CONFIG_H

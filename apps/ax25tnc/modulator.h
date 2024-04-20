@@ -1,5 +1,5 @@
-#ifndef _AUDMOD_MODULATOR_H
-#define _AUDMOD_MODULATOR_H
+#ifndef _AX25TNC_MODULATOR_H
+#define _AX25TNC_MODULATOR_H
 
 #include "config.h"
 
@@ -7,7 +7,7 @@
 #include <modemstuff/linecode.h>
 #include <hamstuff/ax25_frame.h>
 
-typedef struct audmod_modulator
+typedef struct ax25tnc_modulator
 {
     ms_fsk_generator_t ms_fsk_generator;
     ms_float baud_rate;
@@ -19,7 +19,7 @@ typedef struct audmod_modulator
 
     void (*samples_callback)(ms_float *samples, int samples_count);
 
-} audmod_modulator_t;
+} ax25tnc_modulator_t;
 
 /**
  * Initialize the modulator.
@@ -27,9 +27,9 @@ typedef struct audmod_modulator
  * @param mod The modulator to initialize.
  * @param config The configuration to use.
  */
-void audmod_modulator_init(
-    audmod_modulator_t *mod,
-    audmod_config_t *config);
+void ax25tnc_modulator_init(
+    ax25tnc_modulator_t *mod,
+    ax25tnc_config_t *config);
 
 /**
  * Set the callbacks for the modulator.
@@ -37,8 +37,8 @@ void audmod_modulator_init(
  * @param mod The modulator.
  * @param samples_callback The callback for modulated samples.
  */
-void audmod_modulator_set_callbacks(
-    audmod_modulator_t *mod,
+void ax25tnc_modulator_set_callbacks(
+    ax25tnc_modulator_t *mod,
     void (*samples_callback)(ms_float *samples, int samples_count));
 
 /**
@@ -47,8 +47,8 @@ void audmod_modulator_set_callbacks(
  * @param mod The modulator.
  * @param frame The frame to process.
  */
-void audmod_modulator_process(
-    audmod_modulator_t *mod,
+void ax25tnc_modulator_process(
+    ax25tnc_modulator_t *mod,
     hs_ax25_frame_t *frame);
 
 /**
@@ -56,7 +56,7 @@ void audmod_modulator_process(
  *
  * @param mod The modulator to destroy.
  */
-void audmod_modulator_destroy(
-    audmod_modulator_t *mod);
+void ax25tnc_modulator_destroy(
+    ax25tnc_modulator_t *mod);
 
-#endif // _AUDMOD_MODULATOR_H
+#endif // _AX25TNC_MODULATOR_H

@@ -1,6 +1,6 @@
 #include "demodulator.h"
 
-int audmod_demodulator_init(audmod_demodulator_t *demod, audmod_config_t *config)
+int ax25tnc_demodulator_init(ax25tnc_demodulator_t *demod, ax25tnc_config_t *config)
 {
     if (ms_fsk_detector_init(&demod->fsk_detector, config->mark_freq, config->space_freq, config->baud_rate, config->sample_rate))
         return 1;
@@ -12,12 +12,12 @@ int audmod_demodulator_init(audmod_demodulator_t *demod, audmod_config_t *config
     return 0;
 }
 
-void audmod_demodulator_set_callbacks(audmod_demodulator_t *demod, void (*frame_callback)(hs_ax25_frame_t *frame))
+void ax25tnc_demodulator_set_callbacks(ax25tnc_demodulator_t *demod, void (*frame_callback)(hs_ax25_frame_t *frame))
 {
     demod->frame_callback = frame_callback;
 }
 
-void audmod_demodulator_process(audmod_demodulator_t *demod, ms_float *samples, int samples_count)
+void ax25tnc_demodulator_process(ax25tnc_demodulator_t *demod, ms_float *samples, int samples_count)
 {
     int i;
     ms_float symbol;
@@ -35,7 +35,7 @@ void audmod_demodulator_process(audmod_demodulator_t *demod, ms_float *samples, 
     }
 }
 
-void audmod_demodulator_destroy(audmod_demodulator_t *demod)
+void ax25tnc_demodulator_destroy(ax25tnc_demodulator_t *demod)
 {
     ms_fsk_detector_destroy(&demod->fsk_detector);
 }
