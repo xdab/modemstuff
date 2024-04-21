@@ -276,7 +276,7 @@ void *server_thread_function(void *data)
                     {
                         // Read a chunk of data from the client socket
                         client_data_chunk_len = recv(server->client_sockets[i], client_data_buf, DATA_BUF_SIZE, 0);
-                        if (client_data_chunk_len < 0)
+                        if (client_data_chunk_len <= 0)
                         {
                             // Here there is no need to lock the client_sockets array
                             // because its in the same thread as the pselect() call
