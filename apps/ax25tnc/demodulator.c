@@ -12,9 +12,9 @@ int ax25tnc_demodulator_init(ax25tnc_demodulator_t *demod, ax25tnc_config_t *con
     return 0;
 }
 
-void ax25tnc_demodulator_set_callbacks(ax25tnc_demodulator_t *demod, void (*frame_callback)(hs_ax25_frame_t *frame))
+void ax25tnc_demodulator_set_callbacks(ax25tnc_demodulator_t *demod, void (*packet_callback)(hs_ax25_packet_t *packet))
 {
-    demod->frame_callback = frame_callback;
+    demod->packet_callback = packet_callback;
 }
 
 void ax25tnc_demodulator_process(ax25tnc_demodulator_t *demod, ms_float *samples, int samples_count)
@@ -22,7 +22,7 @@ void ax25tnc_demodulator_process(ax25tnc_demodulator_t *demod, ms_float *samples
     int i;
     ms_float symbol;
     ms_bit bit;
-    hs_ax25_frame_t frame;
+    hs_ax25_packet_t packet;
 
     for (i = 0; i < samples_count; i++)
     {
@@ -30,8 +30,8 @@ void ax25tnc_demodulator_process(ax25tnc_demodulator_t *demod, ms_float *samples
         bit = ms_bit_detector_process(&demod->bit_detector, symbol);
         bit = ms_linecode_nrzi_decode(&demod->nrzi_decoder, bit);
 
-        if ((bit != MS_BIT_NONE) && hs_ax25_deframer_process(&demod->ax25_deframer, &frame, bit) && demod->frame_callback)
-            demod->frame_callback(&frame);
+        if ((bit != MS_BIT_NONE) && hs_ax25_deframer_process(&demod->ax25_deframer, &packet, bit) && demod->packet_callback)
+            demod->packet_callback(&packet);
     }
 }
 

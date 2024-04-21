@@ -4,8 +4,7 @@
 #include "config.h"
 
 #include <modemstuff/fsk.h>
-#include <modemstuff/linecode.h>
-#include <hamstuff/ax25_frame.h>
+#include <hamstuff/ax25_packet.h>
 
 typedef struct ax25tnc_modulator
 {
@@ -14,8 +13,6 @@ typedef struct ax25tnc_modulator
     ms_float sample_rate;
     int tx_delay; // in milliseconds
     int tx_tail;  // in milliseconds
-
-    ms_linecode_nrzi_encoder_t nrzi;
 
     void (*samples_callback)(ms_float *samples, int samples_count);
 
@@ -42,14 +39,14 @@ void ax25tnc_modulator_set_callbacks(
     void (*samples_callback)(ms_float *samples, int samples_count));
 
 /**
- * Modulate an AX.25 frame.
+ * Frames and modulates an AX.25 packet.
  *
  * @param mod The modulator.
- * @param frame The frame to process.
+ * @param packet The packet to process.
  */
 void ax25tnc_modulator_process(
     ax25tnc_modulator_t *mod,
-    hs_ax25_frame_t *frame);
+    hs_ax25_packet_t *packet);
 
 /**
  * Destroy the modulator.

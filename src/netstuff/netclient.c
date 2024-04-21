@@ -82,6 +82,16 @@ int ns_client_send(ns_client_t *client, const void *data, uint32_t size)
 {
     int bytes_sent;
 
+    // Wait for the socket to be ready for writing
+    fd_set write_fds;
+    FD_ZERO(&write_fds);
+    FD_SET(client->socket, &write_fds);
+    if (select(client->socket + 1, NULL, &write_fds, NULL, NULL) < 0)
+    {
+        fprintf(stderr, "Error: select() failed\n");
+        return -1;
+    }
+
     // Send the data to the server
     bytes_sent = send(client->socket, data, size, 0);
     if (bytes_sent < 0)
@@ -89,6 +99,9 @@ int ns_client_send(ns_client_t *client, const void *data, uint32_t size)
         fprintf(stderr, "Error: send() failed\n");
         return -1;
     }
+
+    // TODO disconnect handling
+    // TODO handle partial sends
 
     return 0;
 }

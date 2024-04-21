@@ -34,7 +34,7 @@ void ns_server_start(ns_server_t *server);
 
 void ns_server_wait(ns_server_t *server);
 
-void ns_server_broadcast(ns_server_t *server, const void *data, uint32_t size);
+int ns_server_broadcast(ns_server_t *server, const void *data, uint32_t size);
 
 void ns_server_destroy(ns_server_t *server);
 

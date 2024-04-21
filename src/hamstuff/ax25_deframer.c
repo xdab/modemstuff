@@ -1,6 +1,8 @@
 #include <hamstuff/ax25_deframer.h>
 #include <hamstuff/ax25_crc.h>
 
+#include <stdio.h>
+
 void hs_ax25_deframer_init(hs_ax25_deframer_t *deframer)
 {
     deframer->buffer_pos = 0;
@@ -9,7 +11,7 @@ void hs_ax25_deframer_init(hs_ax25_deframer_t *deframer)
     deframer->unstuffed_bit_count = 0;
 }
 
-hs_bit hs_ax25_deframer_process(hs_ax25_deframer_t *deframer, hs_ax25_frame_t *frame, hs_bit bit)
+hs_bit hs_ax25_deframer_process(hs_ax25_deframer_t *deframer, hs_ax25_packet_t *packet, hs_bit bit)
 {
     int i;
     hs_bit ret = 0;
@@ -21,7 +23,7 @@ hs_bit hs_ax25_deframer_process(hs_ax25_deframer_t *deframer, hs_ax25_frame_t *f
     if (deframer->raw_bits == HS_AX25_FLAG)
     {
         // Look at the buffer to see if there is a valid frame
-        if (deframer->buffer_pos >= HS_AX25_MIN_FRAME_LEN)
+        if (deframer->buffer_pos >= HS_AX25_MIN_PACKET_LEN)
         {
             // Validate FCS
             unsigned short received_fcs = deframer->buffer[deframer->buffer_pos - 2] | (deframer->buffer[deframer->buffer_pos - 1] << 8);
@@ -33,8 +35,8 @@ hs_bit hs_ax25_deframer_process(hs_ax25_deframer_t *deframer, hs_ax25_frame_t *f
 
             if (computed_fcs == received_fcs)
             {
-                // Unpack the frame and return 1 to signal that a frame is ready
-                hs_ax25_frame_unpack(frame, deframer->buffer, deframer->buffer_pos);
+                // Unpack the packet and return 1 to signal that a packet is ready
+                hs_ax25_packet_unpack(packet, deframer->buffer, deframer->buffer_pos);
                 ret = 1;
             }
         }

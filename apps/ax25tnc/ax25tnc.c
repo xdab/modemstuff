@@ -24,7 +24,7 @@ hs_kiss_decoder_t kiss_decoder;
 pthread_mutex_t kiss_decoder_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void data_callback(void *data, uint32_t length);
-void demodulated_frame_callback(hs_ax25_frame_t *frame);
+void demodulated_packet_callback(hs_ax25_packet_t *packet);
 void modulated_samples_callback(ms_float *samples, int samples_count);
 
 void kiss_data_start_callback();
@@ -60,7 +60,7 @@ int main(int argc, const char *argv[])
         fprintf(stderr, "Error: ax25tnc_demodulator_init() failed\n");
         return EXIT_FAILURE;
     }
-    ax25tnc_demodulator_set_callbacks(&demodulator, &demodulated_frame_callback);
+    ax25tnc_demodulator_set_callbacks(&demodulator, &demodulated_packet_callback);
 
     // Initialize modulator
     ax25tnc_modulator_init(&modulator, &config);
@@ -114,29 +114,44 @@ void data_callback(void *data, uint32_t length)
     ax25tnc_demodulator_process(&demodulator, (ms_float *)data, length / sizeof(ms_float));
 }
 
-void demodulated_frame_callback(hs_ax25_frame_t *frame)
+void demodulated_packet_callback(hs_ax25_packet_t *packet)
 {
     char buf[512];
     hs_kiss_message_t kiss_message;
     int kiss_length;
+    int ret;
 
     // Print the packet to stderr
-    hs_ax25_frame_pack_tnc2(frame, buf);
+    hs_ax25_packet_pack_tnc2(packet, buf);
     fprintf(stderr, "\tRX\t%s\n", buf);
     fflush(stderr);
 
-    // Send the packet to the KISS clients
+    // Encode the packet as a KISS data frame
     kiss_message.port = 0;
     kiss_message.command = KISS_DATA_FRAME;
-    kiss_message.data_length = hs_ax25_frame_pack(frame, kiss_message.data);
+    kiss_message.data_length = hs_ax25_packet_pack(packet, kiss_message.data);
     kiss_length = hs_kiss_encode(&kiss_message, buf);
-    ns_server_broadcast(&kiss_server, buf, kiss_length);
+
+    // Broadcast the KISS data frame to clients
+    ret = ns_server_broadcast(&kiss_server, buf, kiss_length);
+    if (ret < 0)
+    {
+        fprintf(stderr, "Error: ns_server_broadcast() kiss_server failed\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void modulated_samples_callback(ms_float *samples, int samples_count)
 {
+    int ret;
+
     // Send samples to the audio server
-    ns_client_send(&audio_client, (void *)samples, samples_count * sizeof(ms_float));
+    ret = ns_client_send(&audio_client, (void *)samples, samples_count * sizeof(ms_float));
+    if (ret < 0)
+    {
+        fprintf(stderr, "Error: ns_client_send() audio_client failed\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void kiss_data_start_callback()
@@ -163,19 +178,19 @@ void kiss_data_end_callback()
 void incoming_kiss_message_callback(hs_kiss_message_t *message)
 {
     char buf[512];
-    hs_ax25_frame_t frame;
+    hs_ax25_packet_t packet;
 
     switch (message->command)
     {
     case KISS_DATA_FRAME:
-        hs_ax25_frame_unpack(&frame, message->data, message->data_length);
+        hs_ax25_packet_unpack(&packet, message->data, message->data_length);
 
         // Print the packet to stderr
-        hs_ax25_frame_pack_tnc2(&frame, buf);
+        hs_ax25_packet_pack_tnc2(&packet, buf);
         fprintf(stderr, "\tTX\t%s\n", buf);
 
         // Modulate and send the packet (by modulator's samples callback)
-        ax25tnc_modulator_process(&modulator, &frame);
+        ax25tnc_modulator_process(&modulator, &packet);
         break;
 
     case KISS_TX_DELAY:

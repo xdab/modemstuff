@@ -1,28 +1,14 @@
 #include "modulator.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <modemstuff/linecode.h>
+#include <hamstuff/ax25_framer.h>
 
-#define DEFAULT_TX_DELAY 300
-#define DEFAULT_TX_TAIL 50
+#define DEFAULT_TX_DELAY 320
+#define DEFAULT_TX_TAIL 80
 
 #define MIN_HEAD_FLAGS 4
 #define MIN_TAIL_FLAGS 2
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
-
-void _ax25tnc_modulator_process(ax25tnc_modulator_t *mod, ms_bit bit)
-{
-    const int MAX_SAMPLES = 512; // TODO make variable
-
-    ms_float samples[MAX_SAMPLES];
-    int samples_count;
-
-    bit = ms_linecode_nrzi_encode(&mod->nrzi, bit);
-    samples_count = ms_fsk_generator_process(&mod->ms_fsk_generator, bit, samples, MAX_SAMPLES);
-
-    if (mod->samples_callback != NULL)
-        mod->samples_callback(samples, samples_count);
-}
 
 void ax25tnc_modulator_init(ax25tnc_modulator_t *mod, ax25tnc_config_t *config)
 {
@@ -38,57 +24,36 @@ void ax25tnc_modulator_set_callbacks(ax25tnc_modulator_t *mod, void (*samples_ca
     mod->samples_callback = samples_callback;
 }
 
-void ax25tnc_modulator_process(ax25tnc_modulator_t *mod, hs_ax25_frame_t *frame)
+void ax25tnc_modulator_process(ax25tnc_modulator_t *mod, hs_ax25_packet_t *packet)
 {
-    const int MAX_PACKED_FRAME_SIZE = 512;
+    const int MAX_SAMPLES = 512; // TODO variable
 
-    char packed_frame[MAX_PACKED_FRAME_SIZE];
+    hs_ax25_framer_t framer;
+    ms_linecode_nrzi_encoder_t nrzi;
+    hs_bit bit;
+    int frame_bits;
+    int bit_idx;
+    int unit_idx;
 
-    ms_linecode_nrzi_encoder_init(&mod->nrzi);
+    ms_float samples[MAX_SAMPLES];
+    int samples_count;
 
-    // Insert TX delay worth of flags (without stuffing)
-    int flag_count = mod->tx_delay * mod->baud_rate / 8000;
-    flag_count = MAX(flag_count, MIN_HEAD_FLAGS);
-    for (int i = 0; i < flag_count; i++)
+    hs_ax25_framer_init(&framer);
+    framer.head_flags = MAX(mod->tx_delay * mod->baud_rate / 8000, MIN_HEAD_FLAGS);
+    framer.tail_flags = MAX(mod->tx_tail * mod->baud_rate / 8000, MIN_TAIL_FLAGS);
+
+    ms_linecode_nrzi_encoder_init(&nrzi);
+    (void)hs_ax25_framer_process(&framer, packet);
+
+    while ((bit = hs_ax25_framer_next_bit(&framer)) != -1)
     {
-        _ax25tnc_modulator_process(mod, 0);
-        for (int j = 0; j < 6; j++)
-            _ax25tnc_modulator_process(mod, 1);
-        _ax25tnc_modulator_process(mod, 0);
-    }
+        // Use NRZI line code
+        bit = ms_linecode_nrzi_encode(&nrzi, bit);
 
-    // Insert packed frame (with stuffing)
-    int packed_frame_bytes = hs_ax25_frame_pack(frame, packed_frame);
-    int ones_count = 0;
-    for (int i = 0; i < packed_frame_bytes; i++)
-        for (int j = 0; j < 8; j++)
-        {
-            int bit = packed_frame[i] & (1 << j);
-            bit = bit ? 1 : 0;
-
-            _ax25tnc_modulator_process(mod, bit);
-
-            if (bit)
-                ones_count++;
-            else
-                ones_count = 0;
-
-            if (ones_count == 5)
-            {
-                _ax25tnc_modulator_process(mod, 0);
-                ones_count = 0;
-            }
-        }
-
-    // Insert TX tail worth of flags (without stuffing)
-    flag_count = mod->tx_tail * mod->baud_rate / 8000;
-    flag_count = MAX(flag_count, MIN_TAIL_FLAGS);
-    for (int i = 0; i < flag_count; i++)
-    {
-        _ax25tnc_modulator_process(mod, 0);
-        for (int j = 0; j < 6; j++)
-            _ax25tnc_modulator_process(mod, 1);
-        _ax25tnc_modulator_process(mod, 0);
+        // Generate and send FSK samples
+        samples_count = ms_fsk_generator_process(&mod->ms_fsk_generator, bit, samples, MAX_SAMPLES);
+        if (mod->samples_callback)
+            mod->samples_callback(samples, samples_count);
     }
 }
 

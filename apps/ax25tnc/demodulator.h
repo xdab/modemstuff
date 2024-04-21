@@ -6,6 +6,7 @@
 #include <modemstuff/fsk.h>
 #include <modemstuff/bitdet.h>
 #include <modemstuff/linecode.h>
+
 #include <hamstuff/ax25_deframer.h>
 
 typedef struct ax25tnc_demodulator
@@ -14,7 +15,7 @@ typedef struct ax25tnc_demodulator
     ms_bit_detector_t bit_detector;
     ms_linecode_nrzi_decoder_t nrzi_decoder;
     hs_ax25_deframer_t ax25_deframer;
-    void (*frame_callback)(hs_ax25_frame_t *frame);
+    void (*packet_callback)(hs_ax25_packet_t *packet);
 
 } ax25tnc_demodulator_t;
 
@@ -33,11 +34,11 @@ int ax25tnc_demodulator_init(
  * Set the callbacks for the demodulator.
  *
  * @param demod The demodulator.
- * @param frame_callback The callback for demodulated frames.
+ * @param packet_callback The callback for received packets.
  */
 void ax25tnc_demodulator_set_callbacks(
     ax25tnc_demodulator_t *demod,
-    void (*frame_callback)(hs_ax25_frame_t *frame));
+    void (*packet_callback)(hs_ax25_packet_t *packet));
 
 /**
  * Process samples.
