@@ -20,7 +20,7 @@ int ns_client_init(ns_client_t *client)
 {
     // Clear the client structure
     memset(client, 0, sizeof(ns_client_t));
-
+    
     return 0;
 }
 
@@ -82,13 +82,21 @@ int ns_client_send(ns_client_t *client, const void *data, uint32_t size)
 {
     int bytes_sent;
 
-    // Wait for the socket to be ready for writing
-    fd_set write_fds;
-    FD_ZERO(&write_fds);
-    FD_SET(client->socket, &write_fds);
-    if (select(client->socket + 1, NULL, &write_fds, NULL, NULL) < 0)
+    if (size == 0)
     {
-        fprintf(stderr, "Error: select() failed\n");
+        // Skip sending empty data
+        return 0;
+    }
+
+    if (data == NULL)
+    {
+        fprintf(stderr, "Error: data is NULL\n");
+        return -1;
+    }
+
+    if (client->socket < 0)
+    {
+        fprintf(stderr, "Error: client not connected\n");
         return -1;
     }
 
@@ -99,9 +107,6 @@ int ns_client_send(ns_client_t *client, const void *data, uint32_t size)
         fprintf(stderr, "Error: send() failed\n");
         return -1;
     }
-
-    // TODO disconnect handling
-    // TODO handle partial sends
 
     return 0;
 }
