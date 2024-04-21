@@ -68,9 +68,9 @@ int ns_server_init(ns_server_t *server, uint16_t port)
 }
 
 void ns_server_set_callbacks(ns_server_t *server,
-                          void (*client_data_start_callback)(void),
-                          void (*client_data_chunk_callback)(void *, uint32_t),
-                          void (*client_data_end_callback)(void))
+                             void (*client_data_start_callback)(void),
+                             void (*client_data_chunk_callback)(void *, uint32_t),
+                             void (*client_data_end_callback)(void))
 {
     server->client_data_start_callback = client_data_start_callback;
     server->client_data_chunk_callback = client_data_chunk_callback;
@@ -93,35 +93,61 @@ void ns_server_wait(ns_server_t *server)
     pthread_join(server->server_thread, NULL);
 }
 
-void ns_server_broadcast(ns_server_t *server, const void *data, uint32_t size)
+int ns_server_broadcast(ns_server_t *server, const void *data, uint32_t size)
 {
     int i, sent;
 
     if (size <= 0)
-        return;
+        return -1;
 
     if (data == NULL)
-        return;
+        return -1;
 
     for (i = 0; i < MAX_CLIENTS; i++)
         if (server->client_sockets[i] > 0)
         {
+            // Wait for the socket to be ready for writing
+            fd_set write_fds;
+            FD_ZERO(&write_fds);
+            FD_SET(server->client_sockets[i], &write_fds);
+
+            if (select(server->client_sockets[i] + 1, NULL, &write_fds, NULL, NULL) < 0)
+            {
+                fprintf(stderr, "Error: select() failed\n");
+                goto DISCONNECT;
+            }
+
+            // Send the data to the client socket
             sent = send(server->client_sockets[i], data, size, 0);
             if (sent < 0)
             {
-                // Lock the client_sockets array so a closed socket is not polled
-                // by the pselect() call in server_thread_function()
-                pthread_mutex_lock(&server->client_sockets_mutex);
-
-                fprintf(stderr, "Client at slot %d disconnected\n", i);
-                close(server->client_sockets[i]);
-                server->client_sockets[i] = 0;
-
-                // Unlock the client_sockets array just after the socket is closed
-                // and marked as such with 0
-                pthread_mutex_unlock(&server->client_sockets_mutex);
+                fprintf(stderr, "Error: send() failed\n");
+                goto DISCONNECT;
             }
+
+            if (sent != size)
+            {
+                fprintf(stderr, "Error: send() sent less data than expected\n");
+                goto DISCONNECT;
+            }
+
+            continue;
+
+        DISCONNECT:
+            // Lock the client_sockets array so a closed socket is not polled
+            // by the pselect() call in server_thread_function()
+            pthread_mutex_lock(&server->client_sockets_mutex);
+
+            fprintf(stderr, "Client at slot %d disconnected\n", i);
+            close(server->client_sockets[i]);
+            server->client_sockets[i] = 0;
+
+            // Unlock the client_sockets array just after the socket is closed
+            // and marked as such with 0
+            pthread_mutex_unlock(&server->client_sockets_mutex);
         }
+
+    return 0;
 }
 
 void ns_server_destroy(ns_server_t *server)
@@ -208,6 +234,14 @@ void *server_thread_function(void *data)
                 break;
             }
 
+            // Check if address is 0
+            if (client_address.sin_addr.s_addr == 0)
+            {
+                fprintf(stderr, "Error: client address is 0\n");
+                close(client_socket);
+                continue;
+            }
+
             inet_ntop(AF_INET, &client_address.sin_addr, client_address_str, INET_ADDRSTRLEN);
             fprintf(stderr, "Client connected from %s ", client_address_str);
 
@@ -242,7 +276,7 @@ void *server_thread_function(void *data)
                     {
                         // Read a chunk of data from the client socket
                         client_data_chunk_len = recv(server->client_sockets[i], client_data_buf, DATA_BUF_SIZE, 0);
-                        if (client_data_chunk_len < 0)
+                        if (client_data_chunk_len <= 0)
                         {
                             // Here there is no need to lock the client_sockets array
                             // because its in the same thread as the pselect() call

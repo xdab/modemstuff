@@ -50,6 +50,9 @@ int ms_fsk_detector_init(ms_fsk_detector_t *det, ms_float mark_freq, ms_float sp
 
     // Post-filter
     ms_butterworth_lpf_init(&det->post_filter, POST_LPF_ORDER, baud_rate * POST_LPF_BAUD_RATE_MULTIPLIER, sample_rate);
+    
+    // Process one non-zero sample to properly initialize the filters
+    ms_fsk_detector_process(det, 1e-3);
 
     return 0;
 }
@@ -152,6 +155,11 @@ void ms_fsk_detector_destroy(ms_fsk_detector_t *det)
 
 int ms_fsk_generator_init(ms_fsk_generator_t *gen, ms_float mark_freq, ms_float space_freq, ms_float baud_rate, ms_float sample_rate)
 {
+    gen->baud_rate = baud_rate;
+    gen->sample_rate = sample_rate;
+    gen->mark_freq = mark_freq;
+    gen->space_freq = space_freq;
+    
     ms_dds_init(&gen->fsk_dds, sample_rate, mark_freq, 0.0);
 
     return 0;
@@ -161,8 +169,8 @@ int ms_fsk_generator_process(ms_fsk_generator_t *gen, ms_bit bit, ms_float *out_
 {
     int i, samples_count;
 
-    samples_count = gen->fsk_dds.sample_rate / gen->baud_rate; // TODO even out rounding errors
-
+    samples_count = gen->sample_rate / gen->baud_rate; // TODO even out rounding errors
+    
     gen->fsk_dds.frequency = (bit == MS_BIT_ONE) ? gen->mark_freq : gen->space_freq;
 
     for (i = 0; i < samples_count; i++)

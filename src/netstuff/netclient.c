@@ -20,7 +20,7 @@ int ns_client_init(ns_client_t *client)
 {
     // Clear the client structure
     memset(client, 0, sizeof(ns_client_t));
-
+    
     return 0;
 }
 
@@ -39,13 +39,16 @@ int ns_client_connect(ns_client_t *client, const char *host, uint16_t port)
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(port);
 
-    // Get the server's IP address
+    // Find server host in host database
     host_db_entry = gethostbyname(host);
     if (host_db_entry == NULL)
     {
         fprintf(stderr, "Error: gethostbyname() failed\n");
         return -1;
     }
+
+    // Extract the server's IP address from the host database entry
+    memcpy(&server_address.sin_addr.s_addr, host_db_entry->h_addr_list[0], host_db_entry->h_length);
 
     // Create a new client socket
     client->socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -78,6 +81,24 @@ int ns_client_connect(ns_client_t *client, const char *host, uint16_t port)
 int ns_client_send(ns_client_t *client, const void *data, uint32_t size)
 {
     int bytes_sent;
+
+    if (size == 0)
+    {
+        // Skip sending empty data
+        return 0;
+    }
+
+    if (data == NULL)
+    {
+        fprintf(stderr, "Error: data is NULL\n");
+        return -1;
+    }
+
+    if (client->socket < 0)
+    {
+        fprintf(stderr, "Error: client not connected\n");
+        return -1;
+    }
 
     // Send the data to the server
     bytes_sent = send(client->socket, data, size, 0);
