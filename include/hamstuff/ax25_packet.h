@@ -4,6 +4,8 @@
 #include <hamstuff/hamstuff.h>
 #include <hamstuff/ax25_call.h>
 
+#include <stdbool.h>
+
 #define HS_AX25_MAX_REPEATER_COUNT 8
 #define HS_AX25_MAX_INFO_LEN 255
 
@@ -24,7 +26,7 @@ typedef struct hs_ax25_packet
 } hs_ax25_packet_t;
 
 void hs_ax25_packet_init(hs_ax25_packet_t *pkt);
-int hs_ax25_packet_pack(hs_ax25_packet_t *pkt, hs_byte *out);
+int hs_ax25_packet_pack(hs_ax25_packet_t *pkt, hs_byte *out, bool include_fcs);
 void hs_ax25_packet_unpack(hs_ax25_packet_t *pkt, const hs_byte *inp, const int inp_len);
 int hs_ax25_packet_pack_tnc2(hs_ax25_packet_t *pkt, char *str);
 

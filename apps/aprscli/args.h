@@ -27,6 +27,9 @@ typedef struct aprscli_args
     double longitude;
     bool compressed;
 
+    // Extra
+    bool confirm_before_sending;
+
 } aprscli_args_t;
 
 int aprscli_parse_args(int argc, char **argv, aprscli_args_t *args);

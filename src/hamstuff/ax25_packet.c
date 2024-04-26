@@ -11,7 +11,7 @@ void hs_ax25_packet_init(hs_ax25_packet_t *pkt)
     pkt->info_len = 0;
 }
 
-int hs_ax25_packet_pack(hs_ax25_packet_t *pkt, hs_byte *out)
+int hs_ax25_packet_pack(hs_ax25_packet_t *pkt, hs_byte *out, bool include_fcs)
 {
     int i, j;
 
@@ -37,13 +37,16 @@ int hs_ax25_packet_pack(hs_ax25_packet_t *pkt, hs_byte *out)
     for (j = 0; j < pkt->info_len; i++, j++)
         out[i] = pkt->info[j];
 
-    // Calculate and pack FCS
-    hs_crc16_t crc = hs_ax25_crc16_init();
-    for (j = 0; j < i; j++)
-        crc = hs_ax25_crc16_update(out[j], crc);
-    crc = hs_ax25_crc16_finalize(crc);
-    out[i++] = (crc & 0xff);
-    out[i++] = (crc >> 8);
+    if (include_fcs)
+    {
+        // Calculate and pack FCS
+        hs_crc16_t crc = hs_ax25_crc16_init();
+        for (j = 0; j < i; j++)
+            crc = hs_ax25_crc16_update(out[j], crc);
+        crc = hs_ax25_crc16_finalize(crc);
+        out[i++] = (crc & 0xff);
+        out[i++] = (crc >> 8);
+    }
 
     return i;
 }

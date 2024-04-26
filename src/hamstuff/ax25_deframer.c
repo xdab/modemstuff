@@ -36,7 +36,7 @@ hs_bit hs_ax25_deframer_process(hs_ax25_deframer_t *deframer, hs_ax25_packet_t *
             if (computed_fcs == received_fcs)
             {
                 // Unpack the packet and return 1 to signal that a packet is ready
-                hs_ax25_packet_unpack(packet, deframer->buffer, deframer->buffer_pos);
+                hs_ax25_packet_unpack(packet, deframer->buffer, deframer->buffer_pos - 2);
                 ret = 1;
             }
         }

@@ -54,7 +54,7 @@ int hs_ax25_framer_process(hs_ax25_framer_t *framer, hs_ax25_packet_t *packet)
         _hs_ax25_insert_byte(framer, HS_AX25_FLAG);
 
     // Pack packet
-    packed_packet_bytes = hs_ax25_packet_pack(packet, packed_packet);
+    packed_packet_bytes = hs_ax25_packet_pack(packet, packed_packet, true);
 
     // Insert packed packet with bit stuffing
     ones_count = 0;

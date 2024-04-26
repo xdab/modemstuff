@@ -129,7 +129,7 @@ void demodulated_packet_callback(hs_ax25_packet_t *packet)
     // Encode the packet as a KISS data frame
     kiss_message.port = 0;
     kiss_message.command = KISS_DATA_FRAME;
-    kiss_message.data_length = hs_ax25_packet_pack(packet, kiss_message.data);
+    kiss_message.data_length = hs_ax25_packet_pack(packet, kiss_message.data, false);
     kiss_length = hs_kiss_encode(&kiss_message, buf);
 
     // Broadcast the KISS data frame to clients

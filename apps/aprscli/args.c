@@ -64,6 +64,15 @@
 #define ARG_COMPRESSED_DESC "Compressed position report (default: false)"
 #define ARG_COMPRESSED_DEFAULT 0
 
+// Extra
+
+#define ARG_CONFIRM_KEY 'f'
+#define ARG_CONFIRM "confirm"
+#define ARG_CONFIRM_ARG 0
+#define ARG_CONFIRM_FLAGS (OPTION_ARG_OPTIONAL)
+#define ARG_CONFIRM_DESC "Confirm before sending (default: false)"
+#define ARG_CONFIRM_DEFAULT 0
+
 static struct argp_option options[] = {
     {0, 0, 0, 0, "Basic APRS packet parameters:"},
     {ARG_SOURCE, ARG_SOURCE_KEY, ARG_SOURCE_ARG, ARG_SOURCE_FLAGS, ARG_SOURCE_DESC},
@@ -75,7 +84,8 @@ static struct argp_option options[] = {
     {ARG_LATITUDE, ARG_LATITUDE_KEY, ARG_LATITUDE_ARG, ARG_LATITUDE_FLAGS, ARG_LATITUDE_DESC},
     {ARG_LONGITUDE, ARG_LONGITUDE_KEY, ARG_LONGITUDE_ARG, ARG_LONGITUDE_FLAGS, ARG_LONGITUDE_DESC},
     {ARG_COMPRESSED, ARG_COMPRESSED_KEY, ARG_COMPRESSED_ARG, ARG_COMPRESSED_FLAGS, ARG_COMPRESSED_DESC},
-
+    {0, 0, 0, 0, "Extras:"},
+    {ARG_CONFIRM, ARG_CONFIRM_KEY, ARG_CONFIRM_ARG, ARG_CONFIRM_FLAGS, ARG_CONFIRM_DESC},
     {0}};
 
 const char *argp_program_version = "aprscli dev";
@@ -117,6 +127,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 
     case ARG_COMPRESSED_KEY:
         arguments->compressed = true;
+        break;
+
+    case ARG_CONFIRM_KEY:
+        arguments->confirm_before_sending = true;
         break;
 
     case ARGP_KEY_ARG:
