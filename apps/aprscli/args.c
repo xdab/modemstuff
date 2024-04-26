@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <argp.h>
 
 // Positional
@@ -34,6 +35,13 @@
 #define ARG_TYPE_DEFAULT 0
 
 // Common
+
+#define ARG_SYMBOL_KEY 'S'
+#define ARG_SYMBOL "symbol"
+#define ARG_SYMBOL_ARG "SYMBOL"
+#define ARG_SYMBOL_FLAGS (OPTION_ARG_OPTIONAL)
+#define ARG_SYMBOL_DESC "Symbol (default: house-VHF)"
+#define ARG_SYMBOL_DEFAULT "/-"
 
 #define ARG_TEXT_KEY 'x'
 #define ARG_TEXT "text"
@@ -79,6 +87,7 @@ static struct argp_option options[] = {
     {ARG_DESTINATION, ARG_DESTINATION_KEY, ARG_DESTINATION_ARG, ARG_DESTINATION_FLAGS, ARG_DESTINATION_DESC},
     {ARG_TYPE, ARG_TYPE_KEY, ARG_TYPE_ARG, ARG_TYPE_FLAGS, ARG_TYPE_DESC},
     {0, 0, 0, 0, "Common parameters:"},
+    {ARG_SYMBOL, ARG_SYMBOL_KEY, ARG_SYMBOL_ARG, ARG_SYMBOL_FLAGS, ARG_SYMBOL_DESC},
     {ARG_TEXT, ARG_TEXT_KEY, ARG_TEXT_ARG, ARG_TEXT_FLAGS, ARG_TEXT_DESC},
     {0, 0, 0, 0, "Position report parameters:"},
     {ARG_LATITUDE, ARG_LATITUDE_KEY, ARG_LATITUDE_ARG, ARG_LATITUDE_FLAGS, ARG_LATITUDE_DESC},
@@ -97,20 +106,61 @@ static char args_doc[] = "HOST:PORT";
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
+    int arg_len = 0;
     aprscli_args_t *arguments = state->input;
+
+    if (arg != NULL)
+    {
+        arg_len = strlen(arg); 
+    }
 
     switch (key)
     {
     case ARG_SOURCE_KEY:
+        if (arg_len < 3)
+        {
+            fprintf(stderr, "Error: Source callsign is too short\n");
+            argp_usage(state);
+        }
+        else if (arg_len > 9)
+        {
+            fprintf(stderr, "Error: Source callsign is too long\n");
+            argp_usage(state);
+        }
         arguments->source = arg;
         break;
 
     case ARG_DESTINATION_KEY:
+        if (arg_len < 3)
+        {
+            fprintf(stderr, "Error: Destination callsign is too short\n");
+            argp_usage(state);
+        }
+        else if (arg_len > 9)
+        {
+            fprintf(stderr, "Error: Destination callsign is too long\n");
+            argp_usage(state);
+        }
         arguments->destination = arg;
         break;
 
     case ARG_TYPE_KEY:
+        if (arg_len != 1)
+        {
+            fprintf(stderr, "Error: Packet type must be exactly 1 character long\n");
+            argp_usage(state);
+        }
         arguments->type = arg[0];
+        break;
+
+    case ARG_SYMBOL_KEY:
+        if (arg_len != 2)
+        {
+            fprintf(stderr, "Error: Symbol must be exactly 2 characters long\n");
+            argp_usage(state);
+        }
+        arguments->symbol[0] = arg[0];
+        arguments->symbol[1] = arg[1];
         break;
 
     case ARG_TEXT_KEY:
@@ -135,16 +185,20 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 
     case ARGP_KEY_ARG:
         if (state->arg_num >= POSITIONAL_ARG_COUNT)
-            // Too many arguments, print usage and exit
+        {
+            fprintf(stderr, "Error: Too many positional arguments\n");
             argp_usage(state);
+        }
         else if (state->arg_num == ARG_HOSTPORT_POSITION)
             arguments->host_port = arg;
         break;
 
     case ARGP_KEY_END:
         if (state->arg_num < POSITIONAL_ARG_COUNT)
-            // Not enough arguments, print usage and exit
+        {
+            fprintf(stderr, "Error: Missing positional arguments\n");
             argp_usage(state);
+        }
         break;
 
     default:
@@ -162,10 +216,13 @@ int aprscli_parse_args(int argc, char **argv, aprscli_args_t *args)
     args->source = ARG_SOURCE_DEFAULT;
     args->destination = ARG_DESTINATION_DEFAULT;
     args->type = ARG_TYPE_DEFAULT;
+    args->symbol[0] = ARG_SYMBOL_DEFAULT[0];
+    args->symbol[1] = ARG_SYMBOL_DEFAULT[1];
     args->text = "";
     args->latitude = ARG_LATITUDE_DEFAULT;
     args->longitude = ARG_LONGITUDE_DEFAULT;
     args->compressed = ARG_COMPRESSED_DEFAULT;
+    args->confirm_before_sending = ARG_CONFIRM_DEFAULT;
 
     return argp_parse(&argp, argc, argv, 0, 0, args);
 }

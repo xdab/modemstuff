@@ -20,6 +20,7 @@ typedef struct aprscli_args
     aprscli_packet_type_t type;
 
     // Common
+    char symbol[2];
     char *text;
 
     // Position report
