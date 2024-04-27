@@ -11,9 +11,6 @@ typedef enum aprscli_packet_type
 
 typedef struct aprscli_args
 {
-    // Positional
-    char *host_port;
-
     // Basic
     char *source;
     char *destination;
@@ -27,6 +24,10 @@ typedef struct aprscli_args
     double latitude;
     double longitude;
     bool compressed;
+
+    // KISS
+    bool kiss;
+    int kiss_port;
 
     // Extra
     bool confirm_before_sending;

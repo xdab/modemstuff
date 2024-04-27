@@ -5,12 +5,6 @@
 #include <string.h>
 #include <argp.h>
 
-// Positional
-
-#define POSITIONAL_ARG_COUNT 1
-
-#define ARG_HOSTPORT_POSITION 0
-
 // Basic
 
 #define ARG_SOURCE_KEY 's'
@@ -72,13 +66,28 @@
 #define ARG_COMPRESSED_DESC "Compressed position report (default: false)"
 #define ARG_COMPRESSED_DEFAULT 0
 
+// KISS
+
+#define ARG_KISS_KEY 'k'
+#define ARG_KISS "kiss"
+#define ARG_KISS_ARG 0
+#define ARG_KISS_FLAGS (OPTION_ARG_OPTIONAL)
+#define ARG_KISS_DESC "Use KISS format (default: false)"
+
+#define ARG_KISS_PORT_KEY 'p'
+#define ARG_KISS_PORT "port"
+#define ARG_KISS_PORT_ARG "PORT"
+#define ARG_KISS_PORT_FLAGS (OPTION_ARG_OPTIONAL)
+#define ARG_KISS_PORT_DESC "KISS port number (default: 0)"
+#define ARG_KISS_PORT_DEFAULT 0
+
 // Extra
 
 #define ARG_CONFIRM_KEY 'f'
 #define ARG_CONFIRM "confirm"
 #define ARG_CONFIRM_ARG 0
 #define ARG_CONFIRM_FLAGS (OPTION_ARG_OPTIONAL)
-#define ARG_CONFIRM_DESC "Confirm before sending (default: false)"
+#define ARG_CONFIRM_DESC "Confirm before writing to stdout (default: false)"
 #define ARG_CONFIRM_DEFAULT 0
 
 static struct argp_option options[] = {
@@ -93,16 +102,15 @@ static struct argp_option options[] = {
     {ARG_LATITUDE, ARG_LATITUDE_KEY, ARG_LATITUDE_ARG, ARG_LATITUDE_FLAGS, ARG_LATITUDE_DESC},
     {ARG_LONGITUDE, ARG_LONGITUDE_KEY, ARG_LONGITUDE_ARG, ARG_LONGITUDE_FLAGS, ARG_LONGITUDE_DESC},
     {ARG_COMPRESSED, ARG_COMPRESSED_KEY, ARG_COMPRESSED_ARG, ARG_COMPRESSED_FLAGS, ARG_COMPRESSED_DESC},
+    {0, 0, 0, 0, "KISS parameters:"},
+    {ARG_KISS, ARG_KISS_KEY, ARG_KISS_ARG, ARG_KISS_FLAGS, ARG_KISS_DESC},
+    {ARG_KISS_PORT, ARG_KISS_PORT_KEY, ARG_KISS_PORT_ARG, ARG_KISS_PORT_FLAGS, ARG_KISS_PORT_DESC},
     {0, 0, 0, 0, "Extras:"},
     {ARG_CONFIRM, ARG_CONFIRM_KEY, ARG_CONFIRM_ARG, ARG_CONFIRM_FLAGS, ARG_CONFIRM_DESC},
     {0}};
 
 const char *argp_program_version = "aprscli dev";
-
-static char doc[] =
-    "Build and send APRS packets to TCP/IP KISS TNCs.";
-
-static char args_doc[] = "HOST:PORT";
+static char doc[] =  "Build APRS packets to KISS or TNC2 formats";
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
@@ -179,26 +187,21 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         arguments->compressed = true;
         break;
 
+    case ARG_KISS_KEY:
+        arguments->kiss = true;
+        break;
+    
+    case ARG_KISS_PORT_KEY:
+        arguments->kiss_port = atoi(arg);
+        break;
+
     case ARG_CONFIRM_KEY:
         arguments->confirm_before_sending = true;
         break;
 
     case ARGP_KEY_ARG:
-        if (state->arg_num >= POSITIONAL_ARG_COUNT)
-        {
-            fprintf(stderr, "Error: Too many positional arguments\n");
+        fprintf(stderr, "Error: Positional arguments are not supported\n");
             argp_usage(state);
-        }
-        else if (state->arg_num == ARG_HOSTPORT_POSITION)
-            arguments->host_port = arg;
-        break;
-
-    case ARGP_KEY_END:
-        if (state->arg_num < POSITIONAL_ARG_COUNT)
-        {
-            fprintf(stderr, "Error: Missing positional arguments\n");
-            argp_usage(state);
-        }
         break;
 
     default:
@@ -208,11 +211,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
     return 0;
 }
 
-static struct argp argp = {options, parse_opt, args_doc, doc};
+static struct argp argp = {options, parse_opt, 0, doc};
 
 int aprscli_parse_args(int argc, char **argv, aprscli_args_t *args)
 {
-    args->host_port = NULL;
     args->source = ARG_SOURCE_DEFAULT;
     args->destination = ARG_DESTINATION_DEFAULT;
     args->type = ARG_TYPE_DEFAULT;
@@ -222,6 +224,8 @@ int aprscli_parse_args(int argc, char **argv, aprscli_args_t *args)
     args->latitude = ARG_LATITUDE_DEFAULT;
     args->longitude = ARG_LONGITUDE_DEFAULT;
     args->compressed = ARG_COMPRESSED_DEFAULT;
+    args->kiss = false;
+    args->kiss_port = ARG_KISS_PORT_DEFAULT;
     args->confirm_before_sending = ARG_CONFIRM_DEFAULT;
 
     return argp_parse(&argp, argc, argv, 0, 0, args);

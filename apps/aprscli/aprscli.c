@@ -6,32 +6,20 @@
 
 #include <hamstuff/aprs/aprs.h>
 #include <hamstuff/aprs/position.h>
-
 #include <hamstuff/kiss.h>
-#include <netstuff/send.h>
 
 int main(int argc, char **argv)
 {
     aprscli_args_t arguments;
     hs_ax25_packet_t packet;
     hs_aprs_position_t position;
-    char packet_info[256];
-    char packet_tnc2_repr[512];
+    char packet_info[256] = {0};
+    char packet_repr[512] = {0};
+    int packet_repr_length = 0;
     hs_kiss_message_t kiss_message;
-    char kiss_message_buf[512];
-    int kiss_message_length;
-    int ret;
-    char host[128];
-    int port;
 
     if (aprscli_parse_args(argc, argv, &arguments) != 0)
         return EXIT_FAILURE;
-
-    if (sscanf(arguments.host_port, "%127[^:]:%d", host, &port) != 2)
-    {
-        fprintf(stderr, "Error: Invalid host:port format\n");
-        return EXIT_FAILURE;
-    }
 
     switch (arguments.type)
     {
@@ -47,7 +35,7 @@ int main(int argc, char **argv)
         position.symbol_code = arguments.symbol[1];
         position.compressed = arguments.compressed;
         position.messaging = false;
-        if (arguments.text != NULL) 
+        if (arguments.text != NULL)
             strcpy(position.comment, arguments.text);
         else
             position.comment[0] = '\0';
@@ -63,22 +51,24 @@ int main(int argc, char **argv)
 
     if (arguments.confirm_before_sending)
     {
-        hs_ax25_packet_pack_tnc2(&packet, packet_tnc2_repr);
-        printf("Prepared packet in TNC2 format: %s\n", packet_tnc2_repr);
-        printf("Press Enter to send the packet or interrupt to abort...");
+        packet_repr_length = hs_ax25_packet_pack_tnc2(&packet, packet_repr);
+        fprintf(stderr, "Prepared packet in TNC2 format: %s\n", packet_repr);
+        fprintf(stderr, "Press Enter to send the packet or interrupt to abort...");
         getchar();
     }
 
-    kiss_message.port = 0;
-    kiss_message.command = KISS_DATA_FRAME;
-    kiss_message.data_length = hs_ax25_packet_pack(&packet, kiss_message.data, false);
-    kiss_message_length = hs_kiss_encode(&kiss_message, kiss_message_buf);
-
-    if (ns_send(host, port, kiss_message_buf, kiss_message_length))
+    if (arguments.kiss)
     {
-        fprintf(stderr, "Error: ns_send() failed\n");
-        return EXIT_FAILURE;
+        kiss_message.port = arguments.kiss_port;
+        kiss_message.command = KISS_DATA_FRAME;
+        kiss_message.data_length = hs_ax25_packet_pack(&packet, kiss_message.data, false);
+        packet_repr_length = hs_kiss_encode(&kiss_message, packet_repr);
     }
+    else if (packet_repr_length == 0)
+        packet_repr_length = hs_ax25_packet_pack_tnc2(&packet, packet_repr);
+
+    fwrite(packet_repr, 1, packet_repr_length, stdout);
+    fflush(stdout);
 
     return EXIT_SUCCESS;
 }
