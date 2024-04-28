@@ -50,14 +50,14 @@ int hs_aprs_position_pack(const hs_aprs_position_t *position, char *buf, int buf
 
     if (position->compressed)
         // Compressed position report
-        i = _hs_aprs_compressed_position_pack(position, buf + i, buf_len - i);
+        i += _hs_aprs_compressed_position_pack(position, buf + i, buf_len - i);
     else
         // Uncompressed position report
-        i = _hs_aprs_uncompressed_position_pack(position, buf + i, buf_len - i);
+        i += _hs_aprs_uncompressed_position_pack(position, buf + i, buf_len - i);
 
     // Comment
-    if (position->comment[0] != '\0')
-        i += snprintf(&buf[i], buf_len - i, "%s", position->comment);
+    if (position->comment[0] > 0) 
+        i += snprintf(buf + i, buf_len - i, "%s", position->comment);
 
     return i;
 }
