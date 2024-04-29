@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "stdio.h": "c",
-        "modulator.h": "c",
-        "linecode.h": "c",
-        "ax25_deframer.h": "c",
-        "config.h": "c"
-    }
-}
