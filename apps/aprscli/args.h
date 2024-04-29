@@ -21,9 +21,13 @@ typedef struct aprscli_args
     char *text;
 
     // Position report
+    char *time;
     double latitude;
     double longitude;
     bool compressed;
+    bool messaging;
+    bool time_utc;
+    bool time_dhm;
 
     // KISS
     bool kiss;

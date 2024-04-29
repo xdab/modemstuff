@@ -1,10 +1,13 @@
 #ifndef _HAMSTUFF_APRS_POSITION_H
 #define _HAMSTUFF_APRS_POSITION_H
 
+#include <hamstuff/aprs/time.h>
+
 #include <stdbool.h>
 
 typedef struct hs_aprs_position
 {
+    hs_aprs_time_t time;
     double latitude;
     double longitude;
     char symbol_table;
@@ -13,6 +16,13 @@ typedef struct hs_aprs_position
     bool compressed;
     bool messaging;
 } hs_aprs_position_t;
+
+/**
+ * Initialize an APRS position report structure
+ *
+ * @param position The position report structure to initialize
+ */
+void hs_aprs_position_init(hs_aprs_position_t *position);
 
 /**
  * Pack an APRS position report into a buffer

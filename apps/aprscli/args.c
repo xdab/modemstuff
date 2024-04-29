@@ -42,8 +42,30 @@
 #define ARG_TEXT_ARG "TEXT"
 #define ARG_TEXT_FLAGS (OPTION_ARG_OPTIONAL)
 #define ARG_TEXT_DESC "Text (common to types: P,S)\n\t(default: No text)"
+#define ARG_TEXT_DEFAULT 0
 
 // Position report
+
+#define ARG_TIME_KEY ('t' + 1000)
+#define ARG_TIME "time"
+#define ARG_TIME_ARG "TIME"
+#define ARG_TIME_FLAGS (OPTION_ARG_OPTIONAL)
+#define ARG_TIME_DESC "Time in ISO 8601 (YYYY-MM-DDThh:mm:ss) format (default: current time)"
+#define ARG_TIME_DEFAULT 0
+
+#define ARG_TIME_UTC_KEY ('u' + 1000)
+#define ARG_TIME_UTC "utc"
+#define ARG_TIME_UTC_ARG 0
+#define ARG_TIME_UTC_FLAGS (OPTION_ARG_OPTIONAL)
+#define ARG_TIME_UTC_DESC "Use UTC for timestamp instead of local time (default: true)"
+#define ARG_TIME_UTC_DEFAULT 1
+
+#define ARG_TIME_DHM_KEY ('d' + 1000)
+#define ARG_TIME_DHM "dhm"
+#define ARG_TIME_DHM_ARG 0
+#define ARG_TIME_DHM_FLAGS (OPTION_ARG_OPTIONAL)
+#define ARG_TIME_DHM_DESC "Use DHM format for timestamp instead of HMS (default: false)"
+#define ARG_TIME_DHM_DEFAULT 0
 
 #define ARG_LATITUDE_KEY 'l'
 #define ARG_LATITUDE "lat"
@@ -66,6 +88,13 @@
 #define ARG_COMPRESSED_DESC "Compressed position report (default: false)"
 #define ARG_COMPRESSED_DEFAULT 0
 
+#define ARG_MESSAGING_KEY ('m' + 1000)
+#define ARG_MESSAGING "messaging"
+#define ARG_MESSAGING_ARG 0
+#define ARG_MESSAGING_FLAGS (OPTION_ARG_OPTIONAL)
+#define ARG_MESSAGING_DESC "Messaging (default: false)"
+#define ARG_MESSAGING_DEFAULT 0
+
 // KISS
 
 #define ARG_KISS_KEY 'k'
@@ -73,6 +102,7 @@
 #define ARG_KISS_ARG 0
 #define ARG_KISS_FLAGS (OPTION_ARG_OPTIONAL)
 #define ARG_KISS_DESC "Use KISS format (default: false)"
+#define ARG_KISS_DEFAULT 0
 
 #define ARG_KISS_PORT_KEY 'p'
 #define ARG_KISS_PORT "port"
@@ -83,7 +113,7 @@
 
 // Extra
 
-#define ARG_CONFIRM_KEY 'f'
+#define ARG_CONFIRM_KEY 'y'
 #define ARG_CONFIRM "confirm"
 #define ARG_CONFIRM_ARG 0
 #define ARG_CONFIRM_FLAGS (OPTION_ARG_OPTIONAL)
@@ -99,9 +129,13 @@ static struct argp_option options[] = {
     {ARG_SYMBOL, ARG_SYMBOL_KEY, ARG_SYMBOL_ARG, ARG_SYMBOL_FLAGS, ARG_SYMBOL_DESC},
     {ARG_TEXT, ARG_TEXT_KEY, ARG_TEXT_ARG, ARG_TEXT_FLAGS, ARG_TEXT_DESC},
     {0, 0, 0, 0, "Position report parameters:"},
+    {ARG_TIME, ARG_TIME_KEY, ARG_TIME_ARG, ARG_TIME_FLAGS, ARG_TIME_DESC},
     {ARG_LATITUDE, ARG_LATITUDE_KEY, ARG_LATITUDE_ARG, ARG_LATITUDE_FLAGS, ARG_LATITUDE_DESC},
     {ARG_LONGITUDE, ARG_LONGITUDE_KEY, ARG_LONGITUDE_ARG, ARG_LONGITUDE_FLAGS, ARG_LONGITUDE_DESC},
     {ARG_COMPRESSED, ARG_COMPRESSED_KEY, ARG_COMPRESSED_ARG, ARG_COMPRESSED_FLAGS, ARG_COMPRESSED_DESC},
+    {ARG_MESSAGING, ARG_MESSAGING_KEY, ARG_MESSAGING_ARG, ARG_MESSAGING_FLAGS, ARG_MESSAGING_DESC},
+    {ARG_TIME_UTC, ARG_TIME_UTC_KEY, ARG_TIME_UTC_ARG, ARG_TIME_UTC_FLAGS, ARG_TIME_UTC_DESC},
+    {ARG_TIME_DHM, ARG_TIME_DHM_KEY, ARG_TIME_DHM_ARG, ARG_TIME_DHM_FLAGS, ARG_TIME_DHM_DESC},
     {0, 0, 0, 0, "KISS parameters:"},
     {ARG_KISS, ARG_KISS_KEY, ARG_KISS_ARG, ARG_KISS_FLAGS, ARG_KISS_DESC},
     {ARG_KISS_PORT, ARG_KISS_PORT_KEY, ARG_KISS_PORT_ARG, ARG_KISS_PORT_FLAGS, ARG_KISS_PORT_DESC},
@@ -110,7 +144,7 @@ static struct argp_option options[] = {
     {0}};
 
 const char *argp_program_version = "aprscli dev";
-static char doc[] =  "Build APRS packets to KISS or TNC2 formats";
+static char doc[] = "Build APRS packets to KISS or TNC2 formats";
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
@@ -119,7 +153,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 
     if (arg != NULL)
     {
-        arg_len = strlen(arg); 
+        arg_len = strlen(arg);
     }
 
     switch (key)
@@ -175,6 +209,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         arguments->text = arg;
         break;
 
+    case ARG_TIME_KEY:
+        arguments->time = arg;
+        break;
+
     case ARG_LATITUDE_KEY:
         arguments->latitude = atof(arg);
         break;
@@ -187,10 +225,22 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         arguments->compressed = true;
         break;
 
+    case ARG_MESSAGING_KEY:
+        arguments->messaging = true;
+        break;
+
+    case ARG_TIME_UTC_KEY:
+        arguments->time_utc = true;
+        break;
+
+    case ARG_TIME_DHM_KEY:
+        arguments->time_dhm = true;
+        break;
+
     case ARG_KISS_KEY:
         arguments->kiss = true;
         break;
-    
+
     case ARG_KISS_PORT_KEY:
         arguments->kiss_port = atoi(arg);
         break;
@@ -201,7 +251,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 
     case ARGP_KEY_ARG:
         fprintf(stderr, "Error: Positional arguments are not supported\n");
-            argp_usage(state);
+        argp_usage(state);
         break;
 
     default:
@@ -220,11 +270,15 @@ int aprscli_parse_args(int argc, char **argv, aprscli_args_t *args)
     args->type = ARG_TYPE_DEFAULT;
     args->symbol[0] = ARG_SYMBOL_DEFAULT[0];
     args->symbol[1] = ARG_SYMBOL_DEFAULT[1];
-    args->text = "";
+    args->text = ARG_TEXT_DEFAULT;
+    args->time = ARG_TIME_DEFAULT;
     args->latitude = ARG_LATITUDE_DEFAULT;
     args->longitude = ARG_LONGITUDE_DEFAULT;
     args->compressed = ARG_COMPRESSED_DEFAULT;
-    args->kiss = false;
+    args->messaging = ARG_MESSAGING_DEFAULT;
+    args->time_utc = ARG_TIME_UTC_DEFAULT;
+    args->time_dhm = ARG_TIME_DHM_DEFAULT;
+    args->kiss = ARG_KISS_DEFAULT;
     args->kiss_port = ARG_KISS_PORT_DEFAULT;
     args->confirm_before_sending = ARG_CONFIRM_DEFAULT;
 

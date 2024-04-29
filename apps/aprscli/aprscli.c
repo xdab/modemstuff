@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "args.h"
 
@@ -8,11 +9,70 @@
 #include <hamstuff/aprs/position.h>
 #include <hamstuff/kiss.h>
 
+static int prepare_position_report(aprscli_args_t *arguments, char *packet_info, long packet_info_len)
+{
+    hs_aprs_position_t position;
+    struct tm tm;
+
+    hs_aprs_position_init(&position);
+    memset(&tm, 0, sizeof(tm));
+
+    position.latitude = arguments->latitude;
+    position.longitude = arguments->longitude;
+    position.symbol_table = arguments->symbol[0];
+    position.symbol_code = arguments->symbol[1];
+    position.compressed = arguments->compressed;
+    position.messaging = arguments->messaging;
+
+    if (arguments->time != NULL)
+    {
+        position.time.format = arguments->time_dhm ? HS_APRS_TIME_FORMAT_DHM : HS_APRS_TIME_FORMAT_HMS;
+        position.time.zone = arguments->time_utc ? HS_APRS_TIME_ZONE_UTC : HS_APRS_TIME_ZONE_LOCAL;
+
+        // HMS may only be used with UTC
+        if (position.time.format == HS_APRS_TIME_FORMAT_HMS && position.time.zone != HS_APRS_TIME_ZONE_UTC)
+        {
+            fprintf(stderr, "Error: HMS time format may only be used with UTC\n");
+            return -1;
+        }
+
+        // Parse ISO 8601 time
+        if (sscanf(arguments->time, "%d-%d-%dT%d:%d:%d", &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6)
+        {
+            fprintf(stderr, "Error: Failed to parse time\n");
+            return -1;
+        }
+
+        // Adjust year and month
+        tm.tm_year -= 1900;
+        tm.tm_mon -= 1;   // 0 = January
+        tm.tm_isdst = -1; // Unknown
+
+        // Convert to timestamp
+        position.time.timestamp = mktime(&tm);
+        if (position.time.timestamp <= 0)
+        {
+            fprintf(stderr, "Error: Failed to convert time to timestamp\n");
+            return -1;
+        }
+    }
+
+    if (arguments->text != NULL)
+        strcpy(position.comment, arguments->text);
+
+    if (hs_aprs_position_pack(&position, packet_info, packet_info_len) < 0)
+    {
+        fprintf(stderr, "Error: Failed to pack position report\n");
+        return -1;
+    }
+
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     aprscli_args_t arguments;
     hs_ax25_packet_t packet;
-    hs_aprs_position_t position;
     char packet_info[256] = {0};
     char packet_repr[512] = {0};
     int packet_repr_length = 0;
@@ -29,17 +89,8 @@ int main(int argc, char **argv)
         break;
 
     case APRSCLI_PACKET_TYPE_POSITION_REPORT:
-        position.latitude = arguments.latitude;
-        position.longitude = arguments.longitude;
-        position.symbol_table = arguments.symbol[0];
-        position.symbol_code = arguments.symbol[1];
-        position.compressed = arguments.compressed;
-        position.messaging = false;
-        if (arguments.text != NULL)
-            strcpy(position.comment, arguments.text);
-        else
-            position.comment[0] = '\0';
-        hs_aprs_position_pack(&position, packet_info, sizeof(packet_info));
+        if (prepare_position_report(&arguments, packet_info, sizeof(packet_info)) != 0)
+            return EXIT_FAILURE;
         break;
 
     default:
