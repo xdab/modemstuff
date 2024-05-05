@@ -2,8 +2,8 @@
 #define _HAMSTUFF_AX25_FRAMER_H
 
 #include <hamstuff/hamstuff.h>
-#include <hamstuff/ax25.h>
-#include <hamstuff/ax25_packet.h>
+#include <hamstuff/ax25/ax25.h>
+#include <hamstuff/ax25/packet.h>
 
 typedef unsigned int _bb_unit_t;
 

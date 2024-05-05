@@ -1,5 +1,5 @@
-#ifndef _HAMSTUFF_APRS_TIME_H
-#define _HAMSTUFF_APRS_TIME_H
+#ifndef _HAMSTUFF_APRS_FIELD_TIME_H
+#define _HAMSTUFF_APRS_FIELD_TIME_H
 
 #include <time.h>
 
@@ -40,4 +40,4 @@ void hs_aprs_time_init(hs_aprs_time_t *time);
  */
 int hs_aprs_time_pack(const hs_aprs_time_t *time, char *buf, int buf_len);
 
-#endif // _HAMSTUFF_APRS_TIME_H
+#endif // _HAMSTUFF_APRS_FIELD_TIME_H

@@ -1,4 +1,4 @@
-#include <hamstuff/aprs/time.h>
+#include <hamstuff/aprs/field/time.h>
 
 #include <stdio.h>
 

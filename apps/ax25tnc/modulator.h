@@ -4,7 +4,7 @@
 #include "config.h"
 
 #include <modemstuff/fsk.h>
-#include <hamstuff/ax25_packet.h>
+#include <hamstuff/ax25/packet.h>
 
 typedef struct ax25tnc_modulator
 {

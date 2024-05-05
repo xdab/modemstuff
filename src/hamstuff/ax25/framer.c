@@ -1,4 +1,4 @@
-#include <hamstuff/ax25_framer.h>
+#include <hamstuff/ax25/framer.h>
 
 void _hs_ax25_insert_bit(hs_ax25_framer_t *framer, hs_bit bit)
 {

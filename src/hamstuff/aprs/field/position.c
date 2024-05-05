@@ -1,4 +1,4 @@
-#include <hamstuff/aprs/position.h>
+#include <hamstuff/aprs/field/position.h>
 
 #include <math.h>
 #include <stdio.h>
@@ -9,20 +9,15 @@ static int _hs_aprs_uncompressed_position_pack(const hs_aprs_position_t *positio
 
 void hs_aprs_position_init(hs_aprs_position_t *position)
 {
-    hs_aprs_time_init(&position->time);
     position->latitude = FP_NAN;
     position->longitude = FP_NAN;
     position->symbol_table = '\\';
     position->symbol_code = '.';
-    position->comment[0] = 0;
     position->compressed = false;
-    position->messaging = false;
 }
 
 int hs_aprs_position_pack(const hs_aprs_position_t *position, char *buf, int buf_len)
 {
-    int i, j;
-
     if (position->latitude < -90.0 || position->latitude > 90.0 || isnan(position->latitude))
     {
 #ifdef VERBOSE
@@ -55,41 +50,12 @@ int hs_aprs_position_pack(const hs_aprs_position_t *position, char *buf, int buf
         return -1;
     }
 
-    i = 0;
-
-    // Position report header
-    buf[i++] = (position->time.timestamp > 0)
-                   ? ((position->messaging) ? '@' : '/')
-                   : ((position->messaging) ? '=' : '!');
-
     if (position->compressed)
         // Compressed position report
-        i += _hs_aprs_compressed_position_pack(position, buf + i, buf_len - i);
+        return _hs_aprs_compressed_position_pack(position, buf, buf_len);
     else
-    {
-        // Optional timestamp
-        if (position->time.timestamp > 0)
-        {
-            j = hs_aprs_time_pack(&position->time, buf + i, buf_len - i);
-            if (j < 0)
-            {
-#ifdef VERBOSE
-                fprintf(stderr, "Error: Failed to pack timestamp\n");
-#endif
-                return -1;
-            }
-            i += j;
-        }
-
         // Uncompressed position report
-        i += _hs_aprs_uncompressed_position_pack(position, buf + i, buf_len - i);
-    }
-
-    // Comment
-    if (position->comment[0] > 0)
-        i += snprintf(buf + i, buf_len - i, "%s", position->comment);
-
-    return i;
+        return _hs_aprs_uncompressed_position_pack(position, buf, buf_len);
 }
 
 static int _hs_aprs_compressed_position_pack(const hs_aprs_position_t *position, char *buf, int buf_len)

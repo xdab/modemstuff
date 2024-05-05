@@ -1,7 +1,7 @@
 #include "modulator.h"
 
 #include <modemstuff/linecode.h>
-#include <hamstuff/ax25_framer.h>
+#include <hamstuff/ax25/framer.h>
 
 #define DEFAULT_TX_DELAY 320
 #define DEFAULT_TX_TAIL 80

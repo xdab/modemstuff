@@ -2,7 +2,7 @@
 #define _HAMSTUFF_AX25_FRAME_H
 
 #include <hamstuff/hamstuff.h>
-#include <hamstuff/ax25_call.h>
+#include <hamstuff/ax25/call.h>
 
 #include <stdbool.h>
 

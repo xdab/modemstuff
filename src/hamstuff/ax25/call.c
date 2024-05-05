@@ -1,4 +1,4 @@
-#include <hamstuff/ax25_call.h>
+#include <hamstuff/ax25/call.h>
 
 void hs_ax25_call_init(hs_ax25_call_t *call)
 {

@@ -6,31 +6,30 @@
 #include "args.h"
 
 #include <hamstuff/aprs/aprs.h>
-#include <hamstuff/aprs/position.h>
+#include <hamstuff/aprs/report/position.h>
 #include <hamstuff/kiss.h>
 
 static int prepare_position_report(aprscli_args_t *arguments, char *packet_info, long packet_info_len)
 {
-    hs_aprs_position_t position;
+    hs_aprs_position_report_t report;
     struct tm tm;
 
-    hs_aprs_position_init(&position);
+    hs_aprs_position_report_init(&report);
     memset(&tm, 0, sizeof(tm));
 
-    position.latitude = arguments->latitude;
-    position.longitude = arguments->longitude;
-    position.symbol_table = arguments->symbol[0];
-    position.symbol_code = arguments->symbol[1];
-    position.compressed = arguments->compressed;
-    position.messaging = arguments->messaging;
+    report.position.latitude = arguments->latitude;
+    report.position.longitude = arguments->longitude;
+    report.position.symbol_table = arguments->symbol[0];
+    report.position.symbol_code = arguments->symbol[1];
+    report.position.compressed = arguments->compressed;
 
     if (arguments->time != NULL)
     {
-        position.time.format = arguments->time_dhm ? HS_APRS_TIME_FORMAT_DHM : HS_APRS_TIME_FORMAT_HMS;
-        position.time.zone = arguments->time_utc ? HS_APRS_TIME_ZONE_UTC : HS_APRS_TIME_ZONE_LOCAL;
+        report.time.format = arguments->time_dhm ? HS_APRS_TIME_FORMAT_DHM : HS_APRS_TIME_FORMAT_HMS;
+        report.time.zone = arguments->time_utc ? HS_APRS_TIME_ZONE_UTC : HS_APRS_TIME_ZONE_LOCAL;
 
         // HMS may only be used with UTC
-        if (position.time.format == HS_APRS_TIME_FORMAT_HMS && position.time.zone != HS_APRS_TIME_ZONE_UTC)
+        if (report.time.format == HS_APRS_TIME_FORMAT_HMS && report.time.zone != HS_APRS_TIME_ZONE_UTC)
         {
             fprintf(stderr, "Error: HMS time format may only be used with UTC\n");
             return -1;
@@ -49,8 +48,8 @@ static int prepare_position_report(aprscli_args_t *arguments, char *packet_info,
         tm.tm_isdst = -1; // Unknown
 
         // Convert to timestamp
-        position.time.timestamp = mktime(&tm);
-        if (position.time.timestamp <= 0)
+        report.time.timestamp = mktime(&tm);
+        if (report.time.timestamp <= 0)
         {
             fprintf(stderr, "Error: Failed to convert time to timestamp\n");
             return -1;
@@ -58,9 +57,11 @@ static int prepare_position_report(aprscli_args_t *arguments, char *packet_info,
     }
 
     if (arguments->text != NULL)
-        strcpy(position.comment, arguments->text);
+        strcpy(report.comment, arguments->text);
 
-    if (hs_aprs_position_pack(&position, packet_info, packet_info_len) < 0)
+    report.messaging = arguments->messaging;
+
+    if (hs_aprs_position_report_pack(&report, packet_info, packet_info_len) < 0)
     {
         fprintf(stderr, "Error: Failed to pack position report\n");
         return -1;
@@ -100,14 +101,6 @@ int main(int argc, char **argv)
 
     hs_aprs_packet_init(&packet, arguments.source, arguments.destination, NULL, packet_info);
 
-    if (arguments.confirm_before_sending)
-    {
-        packet_repr_length = hs_ax25_packet_pack_tnc2(&packet, packet_repr);
-        fprintf(stderr, "Prepared packet in TNC2 format: %s\n", packet_repr);
-        fprintf(stderr, "Press Enter to send the packet or interrupt to abort...");
-        getchar();
-    }
-
     if (arguments.kiss)
     {
         kiss_message.port = arguments.kiss_port;
@@ -115,8 +108,10 @@ int main(int argc, char **argv)
         kiss_message.data_length = hs_ax25_packet_pack(&packet, kiss_message.data, false);
         packet_repr_length = hs_kiss_encode(&kiss_message, packet_repr);
     }
-    else if (packet_repr_length == 0)
+    else
+    {
         packet_repr_length = hs_ax25_packet_pack_tnc2(&packet, packet_repr);
+    }
 
     fwrite(packet_repr, 1, packet_repr_length, stdout);
     fflush(stdout);

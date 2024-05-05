@@ -7,7 +7,7 @@
 #include <modemstuff/bitdet.h>
 #include <modemstuff/linecode.h>
 
-#include <hamstuff/ax25_deframer.h>
+#include <hamstuff/ax25/deframer.h>
 
 typedef struct ax25tnc_demodulator
 {

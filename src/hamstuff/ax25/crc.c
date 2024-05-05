@@ -1,4 +1,4 @@
-#include <hamstuff/ax25_crc.h>
+#include <hamstuff/ax25/crc.h>
 
 // http://www.ietf.org/rfc/rfc1549.txt
 const hs_crc16_t HS_AX25_CRC_TABLE[256] = {

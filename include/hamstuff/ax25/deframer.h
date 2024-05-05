@@ -2,8 +2,8 @@
 #define _HAMSTUFF_AX25_DEFRAMER_H
 
 #include <hamstuff/hamstuff.h>
-#include <hamstuff/ax25.h>
-#include <hamstuff/ax25_packet.h>
+#include <hamstuff/ax25/ax25.h>
+#include <hamstuff/ax25/packet.h>
 
 #define HS_AX25_MAX_REPEATER_COUNT 8
 #define HS_AX25_MAX_INFO_LEN 255

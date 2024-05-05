@@ -1,5 +1,5 @@
-#include <hamstuff/ax25_packet.h>
-#include <hamstuff/ax25_crc.h>
+#include <hamstuff/ax25/packet.h>
+#include <hamstuff/ax25/crc.h>
 
 void hs_ax25_packet_init(hs_ax25_packet_t *pkt)
 {

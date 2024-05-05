@@ -1,5 +1,5 @@
-#include <hamstuff/ax25_deframer.h>
-#include <hamstuff/ax25_crc.h>
+#include <hamstuff/ax25/deframer.h>
+#include <hamstuff/ax25/crc.h>
 
 #include <stdio.h>
 
