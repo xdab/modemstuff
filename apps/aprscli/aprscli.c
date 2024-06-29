@@ -83,8 +83,8 @@ static int prepare_time(aprscli_args_t *arguments, hs_aprs_time_t *time)
     memset(&tm, 0, sizeof(tm));
     hs_aprs_time_init(time);
 
-    time->format = arguments->time_dhm ? HS_APRS_TIME_FORMAT_DHM : HS_APRS_TIME_FORMAT_HMS;
-    time->zone = arguments->time_utc ? HS_APRS_TIME_ZONE_UTC : HS_APRS_TIME_ZONE_LOCAL;
+    time->format = arguments->time_hms ?  HS_APRS_TIME_FORMAT_HMS : HS_APRS_TIME_FORMAT_DHM;
+    time->zone = arguments->time_local ?  HS_APRS_TIME_ZONE_LOCAL : HS_APRS_TIME_ZONE_UTC;
 
     // Parse ISO 8601 time
     if (sscanf(arguments->time, "%d-%d-%dT%d:%d:%d", &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6)

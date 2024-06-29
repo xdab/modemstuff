@@ -84,11 +84,11 @@
 #define ARG_TIME_LOCAL_DEFAULT 0
 
 #define ARG_TIME_HMS_KEY ('h' + 1000)
-#define ARG_TIME_HM "dhm"
-#define ARG_TIME_DHM_ARG 0
-#define ARG_TIME_DHM_FLAGS (OPTION_ARG_OPTIONAL)
-#define ARG_TIME_DHM_DESC "Use DHM format for timestamp instead of HMS (default: false)"
-#define ARG_TIME_DHM_DEFAULT 0
+#define ARG_TIME_HMS "hms"
+#define ARG_TIME_HMS_ARG 0
+#define ARG_TIME_HMS_FLAGS (OPTION_ARG_OPTIONAL)
+#define ARG_TIME_HMS_DESC "Use HMS format for timestamp instead of DHM (default: false)"
+#define ARG_TIME_HMS_DEFAULT 0
 
 // Position report
 
@@ -175,8 +175,8 @@ static struct argp_option options[] = {
     {ARG_COMPRESSED, ARG_COMPRESSED_KEY, ARG_COMPRESSED_ARG, ARG_COMPRESSED_FLAGS, ARG_COMPRESSED_DESC},
     {0, 0, 0, 0, "Time parameters:"},
     {ARG_TIME, ARG_TIME_KEY, ARG_TIME_ARG, ARG_TIME_FLAGS, ARG_TIME_DESC},
-    {ARG_TIME_UTC, ARG_TIME_UTC_KEY, ARG_TIME_UTC_ARG, ARG_TIME_UTC_FLAGS, ARG_TIME_UTC_DESC},
-    {ARG_TIME_DHM, ARG_TIME_DHM_KEY, ARG_TIME_DHM_ARG, ARG_TIME_DHM_FLAGS, ARG_TIME_DHM_DESC},
+    {ARG_TIME_LOCAL, ARG_TIME_LOCAL_KEY, ARG_TIME_LOCAL_ARG, ARG_TIME_LOCAL_FLAGS, ARG_TIME_LOCAL_DESC},
+    {ARG_TIME_HMS, ARG_TIME_HMS_KEY, ARG_TIME_HMS_ARG, ARG_TIME_HMS_FLAGS, ARG_TIME_HMS_DESC},
     {0, 0, 0, 0, "Object/Item parameters:"},
     {ARG_NAME, ARG_NAME_KEY, ARG_NAME_ARG, ARG_NAME_FLAGS, ARG_NAME_DESC},
     {ARG_KILLED, ARG_KILLED_KEY, ARG_KILLED_ARG, ARG_KILLED_FLAGS, ARG_KILLED_DESC},
@@ -282,12 +282,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         arguments->time = arg;
         break;
 
-    case ARG_TIME_UTC_KEY:
-        arguments->time_utc = true;
+    case ARG_TIME_LOCAL_KEY:
+        arguments->time_local = true;
         break;
 
-    case ARG_TIME_DHM_KEY:
-        arguments->time_dhm = true;
+    case ARG_TIME_HMS_KEY:
+        arguments->time_hms = true;
         break;
 
     // Object/Item
@@ -371,8 +371,8 @@ int aprscli_parse_args(int argc, char **argv, aprscli_args_t *args)
     args->longitude = ARG_LONGITUDE_DEFAULT;
     args->compressed = ARG_COMPRESSED_DEFAULT;
     args->messaging = ARG_MESSAGING_DEFAULT;
-    args->time_utc = ARG_TIME_UTC_DEFAULT;
-    args->time_dhm = ARG_TIME_DHM_DEFAULT;
+    args->time_local = ARG_TIME_LOCAL_DEFAULT;
+    args->time_hms = ARG_TIME_HMS_DEFAULT;
     args->kiss = ARG_KISS_DEFAULT;
     args->kiss_port = ARG_KISS_PORT_DEFAULT;
 
