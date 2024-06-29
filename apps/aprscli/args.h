@@ -30,8 +30,8 @@ typedef struct aprscli_args
 
     // Time
     char *time;
-    bool time_utc;
-    bool time_dhm;
+    bool time_local;
+    bool time_hms;
 
     // Object/Item
     char *name;

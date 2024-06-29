@@ -76,15 +76,15 @@
 #define ARG_TIME_DESC "Time in ISO 8601 (YYYY-MM-DDThh:mm:ss) format (default: current time)"
 #define ARG_TIME_DEFAULT 0
 
-#define ARG_TIME_UTC_KEY ('u' + 1000)
-#define ARG_TIME_UTC "utc"
-#define ARG_TIME_UTC_ARG 0
-#define ARG_TIME_UTC_FLAGS (OPTION_ARG_OPTIONAL)
-#define ARG_TIME_UTC_DESC "Use UTC for timestamp instead of local time (default: true)"
-#define ARG_TIME_UTC_DEFAULT 1
+#define ARG_TIME_LOCAL_KEY ('l' + 1000)
+#define ARG_TIME_LOCAL "local"
+#define ARG_TIME_LOCAL_ARG 0
+#define ARG_TIME_LOCAL_FLAGS (OPTION_ARG_OPTIONAL)
+#define ARG_TIME_LOCAL_DESC "Use local time for timestamp instead of UTC (default: false)"
+#define ARG_TIME_LOCAL_DEFAULT 0
 
-#define ARG_TIME_DHM_KEY ('d' + 1000)
-#define ARG_TIME_DHM "dhm"
+#define ARG_TIME_HMS_KEY ('h' + 1000)
+#define ARG_TIME_HM "dhm"
 #define ARG_TIME_DHM_ARG 0
 #define ARG_TIME_DHM_FLAGS (OPTION_ARG_OPTIONAL)
 #define ARG_TIME_DHM_DESC "Use DHM format for timestamp instead of HMS (default: false)"
