@@ -4,6 +4,7 @@ file(GLOB_RECURSE SOURCE_LIST "*.c")
 add_library(hamstuff ${SOURCE_LIST} ${HEADER_LIST})
 target_compile_features(hamstuff PUBLIC c_std_99)
 target_include_directories(hamstuff PUBLIC ../../include)
+target_link_libraries(hamstuff PRIVATE m)
 
 source_group(
   TREE "${PROJECT_SOURCE_DIR}/include"
