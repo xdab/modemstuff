@@ -1,5 +1,10 @@
 #include "demodulator.h"
 
+#include <stdio.h>
+
+FILE *fp;
+
+
 int ax25tnc_demodulator_init(ax25tnc_demodulator_t *demod, ax25tnc_config_t *config)
 {
     if (ms_fsk_detector_init(&demod->fsk_detector, config->mark_freq, config->space_freq, config->baud_rate, config->sample_rate))
@@ -8,6 +13,7 @@ int ax25tnc_demodulator_init(ax25tnc_demodulator_t *demod, ax25tnc_config_t *con
     ms_bit_detector_init(&demod->bit_detector, config->sample_rate, config->baud_rate);
     ms_linecode_nrzi_decoder_init(&demod->nrzi_decoder);
     hs_ax25_deframer_init(&demod->ax25_deframer);
+    fp = fopen("demod.raw", "wb");
 
     return 0;
 }
@@ -27,6 +33,7 @@ void ax25tnc_demodulator_process(ax25tnc_demodulator_t *demod, ms_float *samples
     for (i = 0; i < samples_count; i++)
     {
         symbol = ms_fsk_detector_process(&demod->fsk_detector, samples[i]);
+        fwrite(&symbol, sizeof(ms_float), 1, fp);
         bit = ms_bit_detector_process(&demod->bit_detector, symbol);
         bit = ms_linecode_nrzi_decode(&demod->nrzi_decoder, bit);
 

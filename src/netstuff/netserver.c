@@ -178,6 +178,7 @@ void *server_thread_function(void *data)
     ns_server_t *server;
 
     server = (ns_server_t *)data;
+    client_address_length = sizeof(client_address);
 
     while (server->run)
     {
@@ -232,14 +233,6 @@ void *server_thread_function(void *data)
             {
                 fprintf(stderr, "Error: accept() failed\n");
                 break;
-            }
-
-            // Check if address is 0
-            if (client_address.sin_addr.s_addr == 0)
-            {
-                fprintf(stderr, "Error: client address is 0\n");
-                close(client_socket);
-                continue;
             }
 
             inet_ntop(AF_INET, &client_address.sin_addr, client_address_str, INET_ADDRSTRLEN);
