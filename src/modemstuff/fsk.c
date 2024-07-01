@@ -50,7 +50,6 @@ int ms_fsk_detector_init(ms_fsk_detector_t *det, ms_float mark_freq, ms_float sp
     ms_window_init(&det->sample_window,
                    GOERTZEL_WINDOW_SIZE(sample_rate, baud_rate),
                    GOERTZEL_WINDOW_BUFFER_OVERSIZING);
-    printf("GOERTZEL_WINDOW_SIZE: %d\n", GOERTZEL_WINDOW_SIZE(sample_rate, baud_rate));
     
 #endif
 
