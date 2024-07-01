@@ -82,7 +82,7 @@ void hs_ax25_packet_unpack(hs_ax25_packet_t *pkt, const hs_byte *inp, const int 
     pkt->protocol = inp[i++];
 
     // Unpack info
-    for (j = 0; (i < inp_len - 2) && (j < HS_AX25_MAX_INFO_LEN); i++, j++)
+    for (j = 0; (i < inp_len) && (j < HS_AX25_MAX_INFO_LEN); i++, j++)
         pkt->info[j] = inp[i];
 
     pkt->info_len = j;
