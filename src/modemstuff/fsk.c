@@ -129,7 +129,6 @@ ms_float ms_fsk_detector_process(ms_fsk_detector_t *det, ms_float sample)
 
     // Symbol strength comparison
     symbol = mark_power - space_power;
-    return symbol;
 #else
 
     // Whatever, this should not happen
